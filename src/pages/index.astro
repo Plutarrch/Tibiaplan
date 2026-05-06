@@ -1,17 +1,87 @@
 ---
-
+import Layout from "../layouts/Layout.astro";
+import Header from "../components/Header.astro";
+import Sidebar from "../components/Sidebar.astro";
+import Footer from "../components/Footer.astro";
+import CharacterSheet from "../components/CharacterSheet.astro";
+import TrainingTab from "../components/tabs/TrainingTab.astro";
+import LootSplitTab from "../components/tabs/LootSplitTab.astro";
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<Layout>
+  <Header />
+
+  <div class="mx-auto max-w-7xl px-4 pt-4">
+    <div
+      class="grid h-[90px] place-items-center rounded-md border border-dashed border-border-subtle bg-bg-sunken text-[10px] uppercase tracking-[0.15em] text-text-tertiary"
+      aria-hidden="true"
+    >
+      Banner ad
+    </div>
+  </div>
+
+  <div x-data="tabsControl">
+    <div
+      x-data="lootTab"
+      class="mx-auto grid max-w-7xl grid-cols-1 items-stretch gap-6 px-4 py-6 lg:grid-cols-[minmax(0,1fr)_300px]"
+    >
+      <main class="min-w-0">
+        <CharacterSheet />
+
+        <div class="mt-6">
+          <nav class="flex flex-wrap gap-2" aria-label="Tools">
+            <button
+              type="button"
+              class="rounded px-4 py-2 text-[12px] transition-colors"
+              :class="active === 'training' ? 'is-active' : 'border border-border-subtle bg-bg-surface text-text-secondary hover:border-border-emphasis hover:text-text-primary'"
+              @click="setActive('training')"
+            >
+              Training
+            </button>
+            <button
+              type="button"
+              class="rounded px-4 py-2 text-[12px] transition-colors"
+              :class="active === 'loot' ? 'is-active' : 'border border-border-subtle bg-bg-surface text-text-secondary hover:border-border-emphasis hover:text-text-primary'"
+              @click="setActive('loot')"
+            >
+              Loot Split
+            </button>
+            <button
+              type="button"
+              class="rounded px-4 py-2 text-[12px] transition-colors"
+              :class="active === 'imbuements' ? 'is-active' : 'border border-border-subtle bg-bg-surface text-text-secondary hover:border-border-emphasis hover:text-text-primary'"
+              @click="setActive('imbuements')"
+            >
+              Imbuements
+            </button>
+          </nav>
+
+          <div class="mt-4">
+            <div x-show="active === 'training'" x-cloak>
+              <TrainingTab />
+            </div>
+
+            <div x-show="active === 'loot'" x-cloak>
+              <LootSplitTab />
+            </div>
+
+            <section
+              x-show="active === 'imbuements'"
+              x-cloak
+              class="min-h-[200px] rounded-md border border-border-subtle bg-bg-surface p-6"
+            >
+              <h3 class="text-[13px] font-medium text-text-primary">Imbuements</h3>
+              <p class="mt-2 text-[11px] text-text-tertiary">
+                Coming in Phase 4 — full reference of Utility / Damage / Protection imbuements with ingredients and prices.
+              </p>
+            </section>
+          </div>
+        </div>
+      </main>
+
+      <Sidebar />
+    </div>
+  </div>
+
+  <Footer />
+</Layout>

@@ -1,0 +1,105 @@
+---
+import AdSlot from "./AdSlot.astro";
+---
+
+<aside class="flex flex-col items-center gap-4 lg:items-stretch">
+  <AdSlot width={300} height={250} />
+
+  <div class="w-[300px] max-w-full rounded-md border border-border-subtle bg-bg-surface p-4">
+    <h3 class="text-[12px] font-medium tracking-wide text-text-primary">
+      Featured Resellers
+    </h3>
+    <p class="mt-2 text-[11px] leading-relaxed text-text-tertiary">
+      Spot available — contact us
+    </p>
+  </div>
+
+  <AdSlot width={300} height={200} />
+
+  <!--
+    Hunt history card. Lives in the sidebar so the textarea + results panels
+    on the left have room to breathe. Only shown when on the Loot Split tab,
+    history exists, and the user hasn't closed it via the × button.
+  -->
+  <div
+    x-show="active === 'loot' && historyOpen && history.length > 0"
+    x-cloak
+    class="w-full max-w-[300px] flex-grow lg:max-w-none"
+  >
+    <article class="flex h-full flex-col rounded-md border border-border-subtle bg-bg-surface p-4">
+      <header class="flex items-center justify-between gap-3">
+        <h3 class="text-[13px] font-medium text-text-primary">Recent Hunts</h3>
+        <button
+          type="button"
+          @click="closeHistory()"
+          title="Close hunt history"
+          aria-label="Close hunt history"
+          class="rounded p-1 text-[16px] font-bold leading-none text-text-tertiary transition-colors hover:text-danger"
+        >
+          ×
+        </button>
+      </header>
+
+      <div class="mt-3 flex-grow rounded-md border border-border-subtle">
+        <table class="w-full text-[11px]">
+          <thead class="border-b border-border-subtle text-[10px] uppercase tracking-wider text-text-tertiary">
+            <tr>
+              <th class="px-1.5 py-2 text-left font-medium">Hunt</th>
+              <th class="px-1.5 py-2 text-left font-medium">Profit</th>
+              <th class="px-1.5 py-2 text-center font-medium">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="(saved, i) in history" :key="i">
+              <tr class="border-b border-border-subtle/50 last:border-0 hover:bg-bg-primary/30">
+                <td class="px-1.5 py-2">
+                  <button
+                    type="button"
+                    @click="loadHunt(i)"
+                    class="whitespace-nowrap font-medium text-text-primary transition-colors hover:text-accent-violet"
+                  >
+                    Hunt <span x-text="history.length - i"></span>
+                  </button>
+                </td>
+                <td
+                  class="whitespace-nowrap px-1.5 py-2 font-medium"
+                  :class="saved.hunt.totalBalance > 0 ? 'text-success' : (saved.hunt.totalBalance < 0 ? 'text-danger' : 'text-text-secondary')"
+                  x-text="`${saved.hunt.totalBalance > 0 ? '+' : ''}${formatRoundK(saved.hunt.totalBalance)} gp`"
+                ></td>
+                <td class="px-1.5 py-2 text-center">
+                  <div class="inline-flex items-center gap-1">
+                    <button
+                      type="button"
+                      @click="copyHuntFromHistory(i)"
+                      class="rounded border border-border-subtle bg-bg-sunken px-1.5 py-0.5 text-[10px] font-medium text-text-secondary transition-colors hover:border-accent-violet hover:text-accent-violet"
+                      :class="copiedIndex === i && 'border-success text-success hover:border-success hover:text-success'"
+                    >
+                      <span x-text="copiedIndex === i ? '✓' : 'Summary'"></span>
+                    </button>
+                    <button
+                      type="button"
+                      @click="copyHuntLogFromHistory(i)"
+                      class="rounded border border-border-subtle bg-bg-sunken px-1.5 py-0.5 text-[10px] font-medium text-text-secondary transition-colors hover:border-accent-violet hover:text-accent-violet"
+                      :class="copiedLogIndex === i && 'border-success text-success hover:border-success hover:text-success'"
+                    >
+                      <span x-text="copiedLogIndex === i ? '✓' : 'Log'"></span>
+                    </button>
+                    <button
+                      type="button"
+                      @click="deleteHunt(i)"
+                      :title="`Erase Hunt #${history.length - i}`"
+                      :aria-label="`Erase Hunt #${history.length - i}`"
+                      class="rounded px-1 text-[16px] font-bold leading-none text-text-tertiary transition-colors hover:text-danger"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </div>
+</aside>

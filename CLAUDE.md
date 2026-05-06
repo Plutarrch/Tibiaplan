@@ -274,10 +274,10 @@ const SKILLS_BY_VOCATION = {
   paladin:  ['Magic level', 'Distance', 'Shielding'],
   sorcerer: ['Magic level', 'Shielding'],
   druid:    ['Magic level', 'Shielding'],
-  monk:     ['Magic level', 'Fist fighting', 'Shielding']
+  monk:     ['Magic level', 'Fist', 'Shielding']
 };
 
-const ALL_SKILLS = ['Magic level', 'Sword', 'Axe', 'Club', 'Distance', 'Shielding', 'Fist fighting', 'Fishing'];
+const ALL_SKILLS = ['Magic level', 'Sword', 'Axe', 'Club', 'Distance', 'Shielding', 'Fist', 'Fishing'];
 // Fishing only shown when "Show more" is toggled
 ```
 
@@ -307,7 +307,7 @@ const IMBUEMENTS = {
     { name: 'Bash',      sub: 'Club' },
     { name: 'Precision', sub: 'Distance' },
     { name: 'Epiphany',  sub: 'Magic Level' },
-    { name: 'Knock',     sub: 'Fist fighting' }
+    { name: 'Knock',     sub: 'Fist' }
   ],
   protection: [
     { name: 'Dragon Hide', sub: 'Fire' },

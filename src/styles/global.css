@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg-primary: #0E0E18;
+  --color-bg-surface: #181724;
+  --color-bg-sunken: #0F0E18;
+
+  --color-border-subtle: #2A2939;
+  --color-border-emphasis: #5C5A78;
+
+  --color-text-primary: #E8E6F0;
+  --color-text-secondary: #8A87A3;
+  --color-text-tertiary: #5C5A78;
+
+  --color-accent-violet: #9B8AFB;
+  --color-accent-cyan: #5DCAE8;
+  --color-gold: #FFD166;
+  --color-success: #6FE7B7;
+  --color-danger: #E24B4A;
+  --color-danger-from: #B53A3A;
+  --color-danger-to: #791F1F;
+
+  --font-sans:
+    system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+html, body {
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* Hide elements that depend on Alpine until it has hydrated. */
+[x-cloak] {
+  display: none !important;
+}
+
+/* The violet active-state rule (CLAUDE.md): all selectable/active controls
+   use this exact styling when in the selected/checked/active state. */
+.is-active {
+  background: var(--color-accent-violet);
+  color: var(--color-bg-primary);
+  border-color: var(--color-accent-violet);
+  box-shadow: 0 0 0 2px rgba(155, 138, 251, 0.4);
+  font-weight: 500;
+}

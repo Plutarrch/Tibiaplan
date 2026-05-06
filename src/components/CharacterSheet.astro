@@ -1,0 +1,249 @@
+---
+import { VOCATIONS } from "../data/skills";
+---
+
+<section
+  x-data="characterSheet"
+  id="character-sheet"
+  class="scroll-mt-20 rounded-md border border-border-subtle bg-bg-surface p-6"
+  aria-label="Character Sheet"
+>
+  <!-- Top bar: Name as the card heading, "Character Sheet" label on the right. -->
+  <div class="flex items-center justify-between gap-4">
+    <label class="group flex min-w-0 flex-1 items-center gap-3 border-b border-transparent pb-1 hover:border-border-subtle focus-within:border-accent-violet">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.75"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="h-6 w-6 shrink-0 text-text-tertiary transition-colors group-hover:text-text-secondary group-focus-within:text-accent-violet"
+        aria-hidden="true"
+        x-show="!name"
+      >
+        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+        <path d="m15 5 4 4" />
+      </svg>
+      <span class="sr-only">Character name</span>
+      <input
+        type="text"
+        x-model="name"
+        @input.debounce.300ms="save()"
+        placeholder="Set your Character Name"
+        class="min-w-0 flex-1 bg-transparent text-[20px] font-medium text-text-primary placeholder:text-text-tertiary focus:outline-none"
+      />
+    </label>
+    <span class="shrink-0 text-[10px] uppercase tracking-[0.1em] text-text-tertiary">
+      Character Sheet
+    </span>
+  </div>
+
+  <div class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-[auto_auto_minmax(0,1fr)]">
+    <!-- LEFT: big sprite + Simulate Death button below -->
+    <div class="flex flex-col items-stretch gap-3">
+      <div
+        class="grid h-[220px] w-[180px] place-items-center rounded border border-border-subtle bg-bg-sunken text-[10px] uppercase tracking-[0.15em] text-text-tertiary"
+        aria-hidden="true"
+      >
+        Sprite
+      </div>
+      <button
+        type="button"
+        @click="simulateDeath()"
+        :disabled="!level || level < 2"
+        class="w-[180px] rounded px-3 py-2 text-[12px] font-medium text-white shadow-sm transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+        style="background: linear-gradient(180deg, #B53A3A, #791F1F)"
+      >
+        Simulate Death
+      </button>
+    </div>
+
+    <!-- MIDDLE: vertical skull selector — color swatches only -->
+    <div
+      class="flex flex-col gap-2 self-start"
+      role="radiogroup"
+      aria-label="PvP status"
+    >
+      <template x-for="opt in [
+        { value: 'none',  label: 'No Skull', swatch: 'transparent' },
+        { value: 'white', label: 'White',    swatch: '#E5E7EB' },
+        { value: 'red',   label: 'Red',      swatch: '#E24B4A' },
+        { value: 'black', label: 'Black',    swatch: '#1A1A1A' }
+      ]" :key="opt.value">
+        <button
+          type="button"
+          role="radio"
+          class="h-7 w-7 rounded border-2 border-border-subtle transition-colors hover:border-border-emphasis"
+          :class="skull === opt.value && 'is-active'"
+          :aria-checked="skull === opt.value"
+          :title="opt.label"
+          :style="`background:${opt.swatch}`"
+          @click="setSkull(opt.value)"
+        ></button>
+      </template>
+    </div>
+
+    <!-- RIGHT: form fields -->
+    <div class="min-w-0 space-y-6">
+      <!-- Vocation + Promotion -->
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto] md:items-end">
+        <label class="block">
+          <span class="mb-1 block text-[10px] uppercase tracking-wider text-text-tertiary">Vocation</span>
+          <select
+            x-model="vocation"
+            @change="onVocationChange()"
+            class="w-full rounded border border-border-subtle bg-bg-sunken px-3 py-1.5 text-[12px] text-text-primary focus:border-accent-violet focus:outline-none"
+          >
+            <option value="">—</option>
+            {VOCATIONS.map((v) => <option value={v.value}>{v.label}</option>)}
+          </select>
+        </label>
+
+        <label class="flex items-center gap-2 pb-1">
+          <input
+            type="checkbox"
+            x-model="promotion"
+            @change="save()"
+            class="h-4 w-4 rounded border-border-subtle bg-bg-sunken accent-accent-violet"
+          />
+          <span class="text-[11px] text-text-secondary">Promotion</span>
+        </label>
+      </div>
+
+      <!-- Level + Experience (bidirectional) -->
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <label class="block">
+          <span class="mb-1 block text-[10px] uppercase tracking-wider text-text-tertiary">Level</span>
+          <input
+            type="number"
+            min="1"
+            max="5000"
+            x-model.number="level"
+            @input.debounce.300ms="onLevelChange()"
+            placeholder="—"
+            class="w-full rounded border border-border-subtle bg-bg-sunken px-3 py-1.5 text-[12px] text-text-primary focus:border-accent-violet focus:outline-none"
+          />
+        </label>
+
+        <label class="block">
+          <span class="mb-1 block text-[10px] uppercase tracking-wider text-text-tertiary">Experience</span>
+          <input
+            type="number"
+            min="0"
+            x-model.number="experience"
+            @input.debounce.300ms="onExperienceChange()"
+            placeholder="—"
+            class="w-full rounded border border-border-subtle bg-bg-sunken px-3 py-1.5 text-[12px] text-text-primary focus:border-accent-violet focus:outline-none"
+          />
+        </label>
+      </div>
+
+      <!-- Share-experience range hint -->
+      <p
+        x-show="shareRange"
+        x-cloak
+        class="text-[13px] leading-relaxed text-text-secondary"
+      >
+        Shares XP with levels
+        <span class="font-semibold text-text-primary" x-text="shareRange?.min"></span>
+        –
+        <span class="font-semibold text-text-primary" x-text="shareRange?.max"></span>
+      </p>
+
+      <!-- Level progress bar -->
+      <div x-show="level" x-cloak class="space-y-1">
+        <div class="flex items-center justify-between text-[10px] text-text-tertiary">
+          <span x-text="`Level ${level}`"></span>
+          <span x-text="`${Math.round(levelProgress * 100)}% to ${Number(level) + 1}`"></span>
+        </div>
+        <div class="h-1.5 overflow-hidden rounded-full bg-bg-sunken">
+          <div
+            class="h-full bg-gradient-to-r from-accent-violet to-accent-cyan transition-[width]"
+            :style="`width:${levelProgress * 100}%`"
+          ></div>
+        </div>
+      </div>
+
+      <!-- Skills -->
+      <div>
+        <div class="flex items-center justify-between">
+          <h3 class="text-[12px] font-medium text-text-primary">Skills</h3>
+          <button
+            type="button"
+            @click="toggleShowAllSkills()"
+            class="text-[10px] text-text-secondary hover:text-text-primary"
+          >
+            <span x-text="showAllSkills ? '— Show vocation only' : '+ Show all skills'"></span>
+          </button>
+        </div>
+
+        <p
+          x-show="!vocation && !showAllSkills"
+          class="mt-2 text-[11px] text-text-tertiary"
+        >
+          Select a vocation to see your skills.
+        </p>
+
+        <div class="mt-2 grid grid-cols-2 gap-x-3 gap-y-2 md:grid-cols-3">
+          <template x-for="skill in availableSkills" :key="skill">
+            <label class="block min-w-0">
+              <span
+                class="mb-1 block truncate text-[10px] text-text-secondary"
+                :title="skill"
+                x-text="skill"
+              ></span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                :value="skills[skill] ?? ''"
+                @input.debounce.200ms="setSkill(skill, $event.target.value)"
+                placeholder="—"
+                class="w-full rounded border border-border-subtle bg-bg-sunken px-2 py-1 text-[12px] text-text-primary focus:border-accent-violet focus:outline-none"
+              />
+            </label>
+          </template>
+        </div>
+      </div>
+
+      <!-- Blessings -->
+      <div>
+        <div class="flex items-center justify-between">
+          <h3 class="text-[12px] font-medium text-text-primary">Blessings</h3>
+          <span class="text-[10px] text-text-tertiary" x-text="`${blessingsActive}/7 active`"></span>
+        </div>
+
+        <div class="mt-2 grid w-full max-w-[260px] grid-cols-7 gap-2">
+          <template x-for="(active, i) in blessings" :key="i">
+            <button
+              type="button"
+              class="aspect-square w-full rounded border-2 transition-opacity"
+              :title="BLESSINGS[i].name"
+              :aria-label="BLESSINGS[i].name"
+              :aria-pressed="active"
+              :style="active ? `background:${BLESSINGS[i].color};border-color:${BLESSINGS[i].color}` : 'background:transparent;border-color:#2A2939;opacity:0.35'"
+              @click="toggleBlessing(i)"
+            ></button>
+          </template>
+        </div>
+
+        <p
+          x-show="backpackDropRisk"
+          x-cloak
+          class="mt-2 text-[10px] text-gold"
+        >
+          ⚠ Backpack and equipped items may drop on death (under 5 blessings).
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom-right: subtle auto-saved indicator -->
+  <div class="mt-4 flex justify-end">
+    <span class="text-[9px] uppercase tracking-[0.15em] text-text-tertiary opacity-60">
+      auto-saved
+    </span>
+  </div>
+</section>

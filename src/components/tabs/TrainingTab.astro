@@ -1,0 +1,322 @@
+---
+---
+
+<div
+  x-data="trainingTab"
+  class="rounded-md border border-border-subtle bg-bg-surface p-6"
+>
+  <div class="flex items-center justify-between gap-4">
+    <h2 class="text-[14px] font-medium tracking-wide text-text-primary">Training Calculator</h2>
+    <span
+      x-show="vocation"
+      x-cloak
+      class="text-[10px] uppercase tracking-[0.1em] text-text-tertiary"
+    >
+      Vocation: <span x-text="vocation" class="capitalize text-text-secondary"></span>
+    </span>
+  </div>
+
+  <!-- Empty state: no vocation -->
+  <div
+    x-show="!vocation"
+    class="mt-6 rounded border border-dashed border-border-subtle bg-bg-sunken p-6 text-center text-[12px] text-text-secondary"
+  >
+    Pick a vocation in your
+    <a href="#character-sheet" class="text-accent-violet underline">Character Sheet</a>
+    to use the training calculator.
+  </div>
+
+  <!-- Main content -->
+  <div x-show="vocation" x-cloak class="mt-6 space-y-6">
+    <!-- Inputs grid -->
+    <div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
+      <label class="block">
+        <span class="mb-1 block text-[10px] uppercase tracking-wider text-text-tertiary">Skill to train</span>
+        <select
+          x-model="skill"
+          @change="onSkillChange()"
+          class="w-full rounded border bg-bg-sunken px-3 py-1.5 text-[12px] text-text-primary focus:border-accent-violet focus:outline-none"
+          :class="fieldErrors.skill && showResults ? 'border-danger' : 'border-border-subtle'"
+        >
+          <option value="">Select skill</option>
+          <template x-for="t in availableSkills" :key="t.skill">
+            <option :value="t.skill" x-text="t.skill"></option>
+          </template>
+        </select>
+        <span
+          x-show="fieldErrors.skill && showResults"
+          x-cloak
+          class="mt-1 block text-[10px] text-danger"
+          x-text="fieldErrors.skill"
+        ></span>
+      </label>
+
+      <label class="block">
+        <span class="mb-1 block text-[10px] uppercase tracking-wider text-text-tertiary">Current skill</span>
+        <input
+          type="number"
+          min="0"
+          step="1"
+          x-model.number="currentSkill"
+          @input.debounce.250ms="onCurrentSkillChange()"
+          placeholder="—"
+          class="w-full rounded border bg-bg-sunken px-3 py-1.5 text-[12px] text-text-primary focus:border-accent-violet focus:outline-none"
+          :class="fieldErrors.currentSkill && showResults ? 'border-danger' : 'border-border-subtle'"
+        />
+        <span
+          x-show="fieldErrors.currentSkill && showResults"
+          x-cloak
+          class="mt-1 block text-[10px] text-danger"
+          x-text="fieldErrors.currentSkill"
+        ></span>
+      </label>
+
+      <label class="block">
+        <span class="mb-1 block text-[10px] uppercase tracking-wider text-text-tertiary">% to next</span>
+        <input
+          type="number"
+          min="0"
+          max="100"
+          step="0.01"
+          x-model.number="pctToNext"
+          @input.debounce.250ms="onPctChange()"
+          @blur="onPctChange()"
+          placeholder="0–100"
+          class="w-full rounded border bg-bg-sunken px-3 py-1.5 text-[12px] text-text-primary focus:border-accent-violet focus:outline-none"
+          :class="fieldErrors.pctToNext && showResults ? 'border-danger' : 'border-border-subtle'"
+        />
+        <span
+          x-show="fieldErrors.pctToNext && showResults"
+          x-cloak
+          class="mt-1 block text-[10px] text-danger"
+          x-text="fieldErrors.pctToNext"
+        ></span>
+      </label>
+
+      <label class="block">
+        <span class="mb-1 block text-[10px] uppercase tracking-wider text-text-tertiary">Target skill</span>
+        <input
+          type="number"
+          min="1"
+          step="1"
+          x-model.number="targetSkill"
+          @input.debounce.250ms="save()"
+          placeholder="—"
+          class="w-full rounded border bg-bg-sunken px-3 py-1.5 text-[12px] text-text-primary focus:border-accent-violet focus:outline-none"
+          :class="fieldErrors.targetSkill && showResults ? 'border-danger' : 'border-border-subtle'"
+        />
+        <span
+          x-show="fieldErrors.targetSkill && showResults"
+          x-cloak
+          class="mt-1 block text-[10px] text-danger"
+          x-text="fieldErrors.targetSkill"
+        ></span>
+      </label>
+    </div>
+
+    <!-- Skill warning (e.g. Knight Magic) -->
+    <p
+      x-show="selectedSkillData?.warning"
+      x-cloak
+      class="rounded border border-gold/30 bg-gold/5 px-3 py-2 text-[11px] leading-relaxed text-gold"
+    >
+      <span aria-hidden="true">⚠</span>
+      <span x-text="selectedSkillData?.warning"></span>
+    </p>
+
+    <!-- Modifiers + market price -->
+    <div class="flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-border-subtle pt-4 text-[11px] text-text-secondary">
+      <label class="flex cursor-pointer items-center gap-2">
+        <input
+          type="checkbox"
+          x-model="doubleEvent"
+          @change="save()"
+          class="h-4 w-4 rounded border-border-subtle bg-bg-sunken accent-accent-violet"
+        />
+        <span>Double Exp/Skill event</span>
+      </label>
+
+      <label class="flex cursor-pointer items-center gap-2">
+        <input
+          type="checkbox"
+          x-model="privateDummy"
+          @change="save()"
+          class="h-4 w-4 rounded border-border-subtle bg-bg-sunken accent-accent-violet"
+        />
+        <span>Private dummy</span>
+      </label>
+
+      <label class="flex items-center gap-2">
+        <span>Loyalty</span>
+        <select
+          x-model.number="loyalty"
+          @change="save()"
+          class="rounded border border-border-subtle bg-bg-sunken px-2 py-1 text-[11px] text-text-primary focus:border-accent-violet focus:outline-none"
+        >
+          <template x-for="opt in LOYALTY_OPTIONS" :key="opt">
+            <option :value="opt" x-text="`${opt}%`"></option>
+          </template>
+        </select>
+      </label>
+
+      <label class="flex cursor-pointer items-center gap-2">
+        <input
+          type="checkbox"
+          x-model="tcOverThreshold"
+          @change="save()"
+          class="h-4 w-4 rounded border-border-subtle bg-bg-sunken accent-accent-violet"
+        />
+        <span>Tibia Coin above 14,000 gp</span>
+      </label>
+    </div>
+
+    <!-- Calculate button row -->
+    <div class="flex items-center gap-3 border-t border-border-subtle pt-4">
+      <button
+        type="button"
+        @click="calculate()"
+        class="rounded px-5 py-2 text-[12px] font-medium transition-opacity hover:opacity-90"
+        :class="isValid ? 'is-active' : 'border border-border-subtle bg-bg-sunken text-text-secondary'"
+      >
+        <span x-text="showResults ? 'Recalculate' : 'Calculate'"></span>
+      </button>
+      <span
+        x-show="showResults && !isValid"
+        x-cloak
+        class="text-[11px] text-danger"
+      >
+        Fix the highlighted fields above.
+      </span>
+      <span
+        x-show="!showResults"
+        class="text-[11px] text-text-tertiary"
+      >
+        Fill the inputs and press Calculate to see your training plan.
+      </span>
+    </div>
+
+    <!-- Results -->
+    <div x-show="showResults && isValid" x-cloak class="space-y-4">
+      <!-- 3 single-weapon-type cards (alternatives) -->
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <template x-for="card in cards" :key="card.type">
+          <article class="rounded-md border border-border-subtle bg-bg-sunken p-5">
+            <h3 class="whitespace-nowrap text-[14px] font-semibold text-text-primary" x-text="card.label"></h3>
+            <p class="whitespace-nowrap text-[10px] uppercase tracking-wider text-text-tertiary" x-text="`${fmtCount(card.charges)} charges`"></p>
+
+            <dl class="mt-4 space-y-2 text-[12px]">
+              <div class="flex items-baseline justify-between gap-2">
+                <dt class="whitespace-nowrap text-text-tertiary">Weapons</dt>
+                <dd class="text-right font-semibold text-text-primary" x-text="fmtCount(card.result.weapons)"></dd>
+              </div>
+              <div class="flex items-baseline justify-between gap-2">
+                <dt class="whitespace-nowrap text-text-tertiary" x-text="tcOverThreshold ? 'Cost (gp)' : 'Cost (TC)'"></dt>
+                <dd
+                  class="text-right"
+                  :class="tcOverThreshold ? 'text-gold' : 'text-text-primary'"
+                  x-text="tcOverThreshold
+                    ? `${fmtGold(card.result.costGP)} gp`
+                    : `${fmtCount(card.result.costTC)} TC`"
+                ></dd>
+              </div>
+              <div class="flex items-baseline justify-between gap-2">
+                <dt class="whitespace-nowrap text-text-tertiary">Time</dt>
+                <dd class="text-right text-text-secondary" x-text="fmtHours(card.result.hours)"></dd>
+              </div>
+              <div class="border-t border-border-subtle pt-2">
+                <p class="text-[12px] text-text-secondary">
+                  Ending at
+                  <span class="font-semibold text-accent-cyan">skill <span x-text="card.result.endLevel"></span></span>
+                </p>
+                <p class="mt-0.5 whitespace-nowrap text-[10px] text-text-tertiary">
+                  <span x-text="fmtPctToNext(card.result.endPct)"></span>% remaining <span class="font-bold text-text-secondary">→</span> <span x-text="card.result.endLevel + 1"></span>
+                </p>
+              </div>
+            </dl>
+          </article>
+        </template>
+      </div>
+
+      <!-- Smart Mix card (always shows the bar) -->
+      <article
+        x-show="smartMix"
+        x-cloak
+        class="rounded-md border-2 border-accent-violet/40 bg-bg-sunken p-4"
+        style="background-image: linear-gradient(135deg, rgba(155,138,251,0.06), rgba(93,202,232,0.03));"
+      >
+        <div class="flex items-baseline justify-between">
+          <h3 class="flex items-center gap-2 text-[13px] font-medium text-accent-violet">
+            Smart Mix
+            <span class="text-[10px] font-normal uppercase tracking-wider text-text-tertiary">Make every Gold Coin count</span>
+          </h3>
+          <span class="rounded-full border border-accent-violet/50 bg-accent-violet/10 px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-accent-violet">
+            Recommended
+          </span>
+        </div>
+
+        <p class="mt-3 text-[12px] leading-relaxed text-text-primary">
+          <template x-if="smartMix && smartMix.lasting > 0">
+            <span>
+              <span class="font-semibold" x-text="smartMix.lasting"></span> Lasting
+              <template x-if="(smartMix.durable + smartMix.regular) > 0"><span class="text-text-tertiary"> + </span></template>
+            </span>
+          </template>
+          <template x-if="smartMix && smartMix.durable > 0">
+            <span>
+              <span class="font-semibold" x-text="smartMix.durable"></span> Durable
+              <template x-if="smartMix.regular > 0"><span class="text-text-tertiary"> + </span></template>
+            </span>
+          </template>
+          <template x-if="smartMix && smartMix.regular > 0">
+            <span>
+              <span class="font-semibold" x-text="smartMix.regular"></span> Regular
+            </span>
+          </template>
+          <template x-if="smartMix && smartMix.lasting === 0 && smartMix.durable === 0 && smartMix.regular === 0">
+            <span class="text-text-tertiary">already at target</span>
+          </template>
+        </p>
+
+        <dl class="mt-3 grid grid-cols-3 gap-x-4 gap-y-1.5 text-[12px]">
+          <div class="flex items-baseline justify-between gap-2">
+            <dt class="whitespace-nowrap text-text-tertiary" x-text="tcOverThreshold ? 'Cost (gp)' : 'Cost (TC)'"></dt>
+            <dd
+              class="text-right"
+              :class="tcOverThreshold ? 'text-gold' : 'text-text-primary'"
+              x-text="tcOverThreshold
+                ? `${fmtGold(smartMix?.costGP ?? 0)} gp`
+                : `${fmtCount(smartMix?.costTC ?? 0)} TC`"
+            ></dd>
+          </div>
+          <div class="flex items-baseline justify-between gap-2">
+            <dt class="whitespace-nowrap text-text-tertiary">Time</dt>
+            <dd class="text-right text-text-secondary" x-text="fmtHours(smartMix?.hours ?? 0)"></dd>
+          </div>
+          <div class="flex items-baseline justify-between gap-2">
+            <dt class="whitespace-nowrap text-text-tertiary">Weapons</dt>
+            <dd class="text-right font-semibold text-text-primary" x-text="fmtCount((smartMix?.lasting ?? 0) + (smartMix?.durable ?? 0) + (smartMix?.regular ?? 0))"></dd>
+          </div>
+        </dl>
+
+        <!-- End-skill bar (Smart Mix only) -->
+        <div class="mt-4 border-t border-accent-violet/20 pt-3">
+          <div class="flex items-baseline justify-between gap-2 text-[12px]">
+            <span class="text-text-secondary">
+              Ending at
+              <span class="font-semibold text-accent-cyan">skill <span x-text="smartMix?.endLevel ?? 0"></span></span>
+            </span>
+            <span class="whitespace-nowrap text-[10px] text-text-tertiary">
+              <span x-text="fmtPctToNext(smartMix?.endPct ?? 0)"></span>% remaining <span class="font-bold text-text-secondary">→</span> <span x-text="(smartMix?.endLevel ?? 0) + 1"></span>
+            </span>
+          </div>
+          <div class="mt-2 h-2 overflow-hidden rounded-full bg-bg-primary">
+            <div
+              class="h-full bg-gradient-to-r from-accent-violet to-accent-cyan transition-[width]"
+              :style="`width:${Math.min(99.99, smartMix?.endPct ?? 0)}%`"
+            ></div>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+</div>

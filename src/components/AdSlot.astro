@@ -1,0 +1,19 @@
+---
+interface Props {
+  width: number;
+  height: number;
+  label?: string;
+}
+
+const { width, height, label } = Astro.props;
+const displayLabel = label ?? `${width}×${height}`;
+---
+
+<div
+  class="grid place-items-center rounded-md border border-dashed border-border-subtle bg-bg-sunken text-[10px] uppercase tracking-[0.1em] text-text-tertiary"
+  style={`width:${width}px;max-width:100%;aspect-ratio:${width} / ${height}`}
+  role="presentation"
+  aria-hidden="true"
+>
+  {displayLabel}
+</div>
