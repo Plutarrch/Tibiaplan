@@ -1,0 +1,50 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+---
+
+<Layout
+  title="Boss List — TibiaPlan"
+  description="The bosses you need to defeat to unlock Tier 3 (Powerful) imbuements on each character."
+>
+  <Header />
+
+  <main class="mx-auto max-w-3xl px-4 py-12">
+    <article class="rounded-md border border-border-subtle bg-bg-surface p-8 sm:p-12">
+      <header class="text-center">
+        <h1 class="text-[24px] font-medium tracking-wide text-text-primary">Boss List</h1>
+        <p class="mx-auto mt-3 max-w-lg text-[13px] leading-relaxed text-text-secondary">
+          Bosses you need to defeat the first time on each character to unlock
+          Tier 3 (Powerful) imbuements. One unlock per imbuement, per character.
+        </p>
+      </header>
+
+      <div class="mt-10 rounded-md border border-dashed border-border-subtle bg-bg-sunken p-8 text-center">
+        <p class="text-[12px] uppercase tracking-[0.15em] text-text-tertiary">Coming soon</p>
+        <p class="mt-3 text-[12px] leading-relaxed text-text-secondary">
+          We&apos;re sourcing the up-to-date boss list from TibiaWiki. For now,
+          search the in-game cyclopedia for &quot;Powerful Imbuements&quot; or
+          check
+          <a
+            href="https://tibia.fandom.com/wiki/Powerful_Imbuements"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-accent-violet hover:underline"
+          >TibiaWiki</a>.
+        </p>
+      </div>
+
+      <div class="mt-8 flex justify-center">
+        <a
+          href="/#imbuements"
+          class="rounded border border-border-subtle bg-bg-sunken px-4 py-2 text-[12px] text-text-secondary transition-colors hover:border-border-emphasis hover:text-text-primary"
+        >
+          ← Back to Imbuements
+        </a>
+      </div>
+    </article>
+  </main>
+
+  <Footer />
+</Layout>

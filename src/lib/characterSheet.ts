@@ -251,6 +251,12 @@ export function characterSheet() {
     },
 
     onVocationChange() {
+      // ~90% of active Tibia players have promotion — auto-tick the box every
+      // time a vocation is selected. The user can still uncheck manually if
+      // they're really running an unpromoted character.
+      if (this.vocation) {
+        this.promotion = true;
+      }
       this.save();
     },
 

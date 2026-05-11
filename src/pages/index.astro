@@ -6,6 +6,7 @@ import Footer from "../components/Footer.astro";
 import CharacterSheet from "../components/CharacterSheet.astro";
 import TrainingTab from "../components/tabs/TrainingTab.astro";
 import LootSplitTab from "../components/tabs/LootSplitTab.astro";
+import ImbuementsTab from "../components/tabs/ImbuementsTab.astro";
 ---
 
 <Layout>
@@ -21,65 +22,102 @@ import LootSplitTab from "../components/tabs/LootSplitTab.astro";
   </div>
 
   <div x-data="tabsControl">
-    <div
-      x-data="lootTab"
-      class="mx-auto grid max-w-7xl grid-cols-1 items-stretch gap-6 px-4 py-6 lg:grid-cols-[minmax(0,1fr)_300px]"
-    >
-      <main class="min-w-0">
-        <CharacterSheet />
+    <div x-data="lootTab">
+      <!--
+        Top section: 2-col grid with main column (Character Sheet + tabs nav
+        + the Training/Loot Split tab content) and the sidebar (ads, featured
+        resellers, hunt history). Standard layout.
+      -->
+      <div
+        class="mx-auto grid max-w-7xl grid-cols-1 items-stretch gap-6 px-4 py-6 lg:grid-cols-[minmax(0,1fr)_300px]"
+      >
+        <main class="min-w-0">
+          <CharacterSheet />
 
-        <div class="mt-6">
-          <nav class="flex flex-wrap gap-2" aria-label="Tools">
-            <button
-              type="button"
-              class="rounded px-4 py-2 text-[12px] transition-colors"
-              :class="active === 'training' ? 'is-active' : 'border border-border-subtle bg-bg-surface text-text-secondary hover:border-border-emphasis hover:text-text-primary'"
-              @click="setActive('training')"
-            >
-              Training
-            </button>
-            <button
-              type="button"
-              class="rounded px-4 py-2 text-[12px] transition-colors"
-              :class="active === 'loot' ? 'is-active' : 'border border-border-subtle bg-bg-surface text-text-secondary hover:border-border-emphasis hover:text-text-primary'"
-              @click="setActive('loot')"
-            >
-              Loot Split
-            </button>
-            <button
-              type="button"
-              class="rounded px-4 py-2 text-[12px] transition-colors"
-              :class="active === 'imbuements' ? 'is-active' : 'border border-border-subtle bg-bg-surface text-text-secondary hover:border-border-emphasis hover:text-text-primary'"
-              @click="setActive('imbuements')"
-            >
-              Imbuements
-            </button>
-          </nav>
+          <div class="mt-6">
+            <nav class="flex flex-wrap gap-2" aria-label="Tools">
+              <button
+                type="button"
+                class="rounded px-4 py-2 text-[12px] transition-colors"
+                :class="active === 'training' ? 'is-active' : 'border border-border-subtle bg-bg-surface text-text-secondary hover:border-border-emphasis hover:text-text-primary'"
+                @click="setActive('training')"
+              >
+                Training
+              </button>
+              <button
+                type="button"
+                class="rounded px-4 py-2 text-[12px] transition-colors"
+                :class="active === 'loot' ? 'is-active' : 'border border-border-subtle bg-bg-surface text-text-secondary hover:border-border-emphasis hover:text-text-primary'"
+                @click="setActive('loot')"
+              >
+                Loot Split
+              </button>
+              <button
+                type="button"
+                class="rounded px-4 py-2 text-[12px] transition-colors"
+                :class="active === 'imbuements' ? 'is-active' : 'border border-border-subtle bg-bg-surface text-text-secondary hover:border-border-emphasis hover:text-text-primary'"
+                @click="setActive('imbuements')"
+              >
+                Imbuements
+              </button>
+            </nav>
 
-          <div class="mt-4">
-            <div x-show="active === 'training'" x-cloak>
-              <TrainingTab />
+            <div class="mt-4">
+              <div x-show="active === 'training'" x-cloak>
+                <TrainingTab />
+              </div>
+
+              <div x-show="active === 'loot'" x-cloak>
+                <LootSplitTab />
+              </div>
+
+              <!--
+                Imbuements header: lives in the main column tab-content area
+                so it shares the SAME width and SAME mt-4 gap from the tabs
+                as Training Calculator and Loot Split. The full-width sections
+                (Combat / Skill Boost / Protection) render below the [main +
+                sidebar] grid — together they form a natural L-step:
+                narrow header on top, wide sections below.
+              -->
+              <div x-show="active === 'imbuements'" x-cloak>
+                <div class="rounded-md border border-border-subtle bg-bg-surface p-6">
+                  <div class="flex flex-wrap items-baseline justify-between gap-3">
+                    <h2 class="text-[14px] font-medium tracking-wide text-text-primary">Imbuements</h2>
+                    <p class="text-[10px] uppercase tracking-[0.1em] text-text-tertiary">
+                      Tap a tier to see its materials and cost
+                    </p>
+                  </div>
+                  <p class="mt-2 text-[11px] leading-relaxed text-text-secondary">
+                    Each imbuement lasts 20 hours per use and applies to one item slot. Tier 3
+                    requires completing the relevant boss quest the first time on each character.
+                    <a
+                      href="/boss-list"
+                      class="text-accent-violet underline-offset-2 hover:underline"
+                    >(See Boss list)</a>
+                  </p>
+                </div>
+              </div>
             </div>
-
-            <div x-show="active === 'loot'" x-cloak>
-              <LootSplitTab />
-            </div>
-
-            <section
-              x-show="active === 'imbuements'"
-              x-cloak
-              class="min-h-[200px] rounded-md border border-border-subtle bg-bg-surface p-6"
-            >
-              <h3 class="text-[13px] font-medium text-text-primary">Imbuements</h3>
-              <p class="mt-2 text-[11px] text-text-tertiary">
-                Coming in Phase 4 — full reference of Utility / Damage / Protection imbuements with ingredients and prices.
-              </p>
-            </section>
           </div>
-        </div>
-      </main>
+        </main>
 
-      <Sidebar />
+        <Sidebar />
+      </div>
+
+      <!--
+        Imbuements sections (Combat / Skill Boost / Protection): full-width
+        row below the [main + sidebar] grid. Together with the narrow header
+        card above (in the main column), they form an L-step naturally — no
+        clip-path, no negative margin, no AD repositioning. All 4 ADs stay
+        locked at their natural sidebar positions.
+      -->
+      <div
+        x-show="active === 'imbuements'"
+        x-cloak
+        class="mx-auto max-w-7xl px-4 pb-6"
+      >
+        <ImbuementsTab />
+      </div>
     </div>
   </div>
 
