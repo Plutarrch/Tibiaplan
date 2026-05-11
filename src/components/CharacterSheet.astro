@@ -43,11 +43,29 @@ import { VOCATIONS } from "../data/skills";
   <div class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-[auto_auto_minmax(0,1fr)]">
     <!-- LEFT: big sprite + Simulate Death button below -->
     <div class="flex flex-col items-stretch gap-3">
+      <!--
+        Vocation sprite. Renders /sprites/vocations/{vocation}.png when a
+        vocation is selected, otherwise the placeholder text. image-rendering:
+        pixelated keeps the pixel-art outfit crisp when scaled up from its
+        native ~32×64 size to fill the 180×220 frame.
+      -->
       <div
-        class="grid h-[220px] w-[180px] place-items-center rounded border border-border-subtle bg-bg-sunken text-[10px] uppercase tracking-[0.15em] text-text-tertiary"
-        aria-hidden="true"
+        class="grid h-[220px] w-[180px] place-items-center rounded border border-border-subtle bg-bg-sunken"
       >
-        Sprite
+        <template x-if="vocation">
+          <img
+            :src="`/sprites/vocations/${vocation}.png`"
+            :alt="vocation"
+            class="h-full w-full object-contain p-3"
+            style="image-rendering: pixelated;"
+            loading="lazy"
+            decoding="async"
+            onerror="this.style.display='none'"
+          />
+        </template>
+        <template x-if="!vocation">
+          <span class="text-[10px] uppercase tracking-[0.15em] text-text-tertiary" aria-hidden="true">Sprite</span>
+        </template>
       </div>
       <button
         type="button"
