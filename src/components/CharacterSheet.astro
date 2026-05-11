@@ -70,28 +70,42 @@ import { VOCATIONS } from "../data/skills";
       </button>
     </div>
 
-    <!-- MIDDLE: vertical skull selector — color swatches only -->
+    <!--
+      MIDDLE: vertical skull selector. Uses sprite icons (PvE = no skull,
+      then white / red / black). Display order matches the in-game severity
+      progression. Active state = violet border + subtle glow; inactive =
+      grayscale + low opacity. Sprites live in public/sprites/skulls/.
+    -->
     <div
       class="flex flex-col gap-2 self-start"
       role="radiogroup"
       aria-label="PvP status"
     >
       <template x-for="opt in [
-        { value: 'none',  label: 'No Skull', swatch: 'transparent' },
-        { value: 'white', label: 'White',    swatch: '#E5E7EB' },
-        { value: 'red',   label: 'Red',      swatch: '#E24B4A' },
-        { value: 'black', label: 'Black',    swatch: '#1A1A1A' }
+        { value: 'none',  label: 'PvE — No Skull', sprite: '/sprites/skulls/pve.gif' },
+        { value: 'white', label: 'White Skull',    sprite: '/sprites/skulls/white.gif' },
+        { value: 'red',   label: 'Red Skull',      sprite: '/sprites/skulls/red.gif' },
+        { value: 'black', label: 'Black Skull',    sprite: '/sprites/skulls/black.gif' }
       ]" :key="opt.value">
         <button
           type="button"
           role="radio"
-          class="h-7 w-7 rounded border-2 border-border-subtle transition-colors hover:border-border-emphasis"
-          :class="skull === opt.value && 'is-active'"
+          class="tooltip-host relative grid h-7 w-7 place-items-center rounded transition-all"
+          :class="skull === opt.value ? 'is-active' : 'border border-border-subtle bg-bg-sunken hover:border-border-emphasis'"
           :aria-checked="skull === opt.value"
           :title="opt.label"
-          :style="`background:${opt.swatch}`"
           @click="setSkull(opt.value)"
-        ></button>
+        >
+          <img
+            :src="opt.sprite"
+            :alt="opt.label"
+            class="h-full w-full object-contain p-0.5"
+            loading="lazy"
+            decoding="async"
+            onerror="this.style.display='none'"
+          />
+          <span class="tooltip-text" x-text="opt.label"></span>
+        </button>
       </template>
     </div>
 
@@ -254,17 +268,36 @@ import { VOCATIONS } from "../data/skills";
               <span class="text-[10px] text-text-tertiary" x-text="`${blessingsActive}/8 active`"></span>
             </div>
 
-            <div class="mt-2 grid w-full max-w-[300px] grid-cols-8 gap-2">
-              <template x-for="(active, i) in blessings" :key="i">
+            <!--
+              Display order (Twist of Fate first, then the 7 regulars) is
+              decoupled from data order to keep death-math + persistence
+              indices stable. See BLESSING_DISPLAY_ORDER in src/data/skills.ts.
+              Layout: single row of 8 cells stretched to fill the full width
+              of the form column — gives the biggest sprite size possible
+              while keeping all blessings on one line. No overflow-hidden
+              on the buttons (tooltip positions ABOVE the button bounds).
+            -->
+            <div class="mt-2 grid w-full grid-cols-8 gap-2">
+              <template x-for="i in BLESSING_DISPLAY_ORDER" :key="i">
                 <button
                   type="button"
-                  class="aspect-square w-full rounded border-2 transition-opacity"
+                  class="tooltip-host group relative grid aspect-square w-full place-items-center rounded border bg-bg-sunken transition-all"
                   :title="BLESSINGS[i].name"
                   :aria-label="BLESSINGS[i].name"
-                  :aria-pressed="active"
-                  :style="active ? `background:${BLESSINGS[i].color};border-color:${BLESSINGS[i].color}` : 'background:transparent;border-color:#2A2939;opacity:0.35'"
+                  :aria-pressed="blessings[i]"
+                  :class="blessings[i] ? 'border-accent-violet/60 shadow-[0_0_0_1px_rgba(155,138,251,0.25)]' : 'border-border-subtle opacity-40 grayscale'"
                   @click="toggleBlessing(i)"
-                ></button>
+                >
+                  <img
+                    :src="BLESSINGS[i].sprite"
+                    :alt="BLESSINGS[i].name"
+                    class="h-full w-full object-contain p-1"
+                    loading="lazy"
+                    decoding="async"
+                    onerror="this.style.display='none'"
+                  />
+                  <span class="tooltip-text" x-text="BLESSINGS[i].name"></span>
+                </button>
               </template>
             </div>
 

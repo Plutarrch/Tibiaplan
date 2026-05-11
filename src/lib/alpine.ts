@@ -1,4 +1,5 @@
 import Alpine from "alpinejs";
+import { boostedToday } from "./boostedToday";
 import { characterSheet } from "./characterSheet";
 import { imbuementsTab } from "./imbuementsTab";
 import { lootTab } from "./lootTab";
@@ -16,6 +17,7 @@ Alpine.data("trainingTab", trainingTab);
 Alpine.data("lootTab", lootTab);
 Alpine.data("imbuementsTab", imbuementsTab);
 Alpine.data("tabsControl", tabsControl);
+Alpine.data("boostedToday", boostedToday);
 
 window.Alpine = Alpine;
 Alpine.start();

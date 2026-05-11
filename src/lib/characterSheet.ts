@@ -7,6 +7,7 @@ import {
 } from "../data/formulas";
 import {
   ALL_SKILLS,
+  BLESSING_DISPLAY_ORDER,
   BLESSINGS,
   REGULAR_BLESSINGS_COUNT,
   SKILLS_BY_VOCATION,
@@ -85,6 +86,7 @@ export function characterSheet() {
 
     // Static data exposed to templates
     BLESSINGS,
+    BLESSING_DISPLAY_ORDER,
 
     init() {
       this.load();
