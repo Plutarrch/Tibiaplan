@@ -45,27 +45,25 @@ import { VOCATIONS } from "../data/skills";
     <div class="flex flex-col items-stretch gap-3">
       <!--
         Vocation sprite. Renders /sprites/vocations/{vocation}.png when a
-        vocation is selected, otherwise the placeholder text. image-rendering:
-        pixelated keeps the pixel-art outfit crisp when scaled up from its
-        native ~32×64 size to fill the 180×220 frame.
+        vocation is selected, or /sprites/vocations/placeholder.png when
+        the user hasn't picked one yet (a generic silhouette / question
+        mark so the box is never empty). image-rendering: pixelated keeps
+        the pixel art crisp when scaled up from its native ~32×64 size to
+        fill the 180×220 frame.
       -->
       <div
         class="grid h-[220px] w-[180px] place-items-center rounded border border-border-subtle bg-bg-sunken"
       >
-        <template x-if="vocation">
-          <img
-            :src="`/sprites/vocations/${vocation}.png`"
-            :alt="vocation"
-            class="h-full w-full object-contain p-3"
-            style="image-rendering: pixelated;"
-            loading="lazy"
-            decoding="async"
-            onerror="this.style.display='none'"
-          />
-        </template>
-        <template x-if="!vocation">
-          <span class="text-[10px] uppercase tracking-[0.15em] text-text-tertiary" aria-hidden="true">Sprite</span>
-        </template>
+        <img
+          :src="vocation ? `/sprites/vocations/${vocation}.png` : '/sprites/vocations/placeholder.png'"
+          :alt="vocation || 'No vocation selected'"
+          class="h-full w-full object-contain p-3"
+          :class="!vocation && 'grayscale opacity-60'"
+          style="image-rendering: pixelated;"
+          loading="lazy"
+          decoding="async"
+          onerror="this.style.display='none'"
+        />
       </div>
       <button
         type="button"
