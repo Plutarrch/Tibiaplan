@@ -33,6 +33,45 @@ export interface TrainableSkill {
 }
 
 /**
+ * Vocation constant for every skill that appears in SKILLS_BY_VOCATION.
+ * Used by the death-skill-loss calculator to convert "skill X at Y% to next"
+ * into total accumulated tries and back. Values match TRAINING_BY_VOCATION
+ * for skills exercise weapons can raise; Shielding uses the standard 1.1
+ * (TibiaWiki: same exponential as melee skills, just trained differently).
+ *
+ * If a (vocation, skill) pair is missing here we cannot compute skill loss
+ * for it without falling back to an approximation — keep this table as the
+ * single source of truth.
+ */
+export const SKILL_VOCATION_CONSTANTS: Record<string, Record<string, number>> = {
+  knight: {
+    "Magic level": 3.0,
+    Shielding: 1.1,
+    Sword: 1.1,
+    Axe: 1.1,
+    Club: 1.1,
+  },
+  paladin: {
+    "Magic level": 1.4,
+    Distance: 1.1,
+    Shielding: 1.1,
+  },
+  sorcerer: {
+    "Magic level": 1.1,
+    Shielding: 1.1,
+  },
+  druid: {
+    "Magic level": 1.1,
+    Shielding: 1.1,
+  },
+  monk: {
+    "Magic level": 1.25,
+    Fist: 1.1,
+    Shielding: 1.1,
+  },
+};
+
+/**
  * Skills trainable with exercise weapons, by vocation. Shielding and Fishing
  * are intentionally absent — exercise weapons cannot raise those.
  */

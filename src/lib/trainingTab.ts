@@ -50,6 +50,7 @@ function defaults(): PersistedTraining {
 interface CharacterSnapshot {
   vocation?: string;
   skills?: Record<string, number | null>;
+  pctToNextBySkill?: Record<string, number | null>;
 }
 
 function readCharacter(): CharacterSnapshot {
@@ -81,6 +82,23 @@ function writeCharacterSkill(skill: string, value: number | null) {
   }
 }
 
+/** Write back the per-skill "% to next" value to the character store. */
+function writeCharacterSkillPct(skill: string, value: number | null) {
+  if (!skill) return;
+  try {
+    const raw = localStorage.getItem(CHARACTER_KEY);
+    const ch = raw && raw.trim() ? JSON.parse(raw) : {};
+    if (typeof ch !== "object" || ch === null) return;
+    ch.pctToNextBySkill = ch.pctToNextBySkill ?? {};
+    if (ch.pctToNextBySkill[skill] === value) return; // no-op
+    ch.pctToNextBySkill[skill] = value;
+    localStorage.setItem(CHARACTER_KEY, JSON.stringify(ch));
+    window.dispatchEvent(new CustomEvent(CHARACTER_EVENT, { detail: ch }));
+  } catch {
+    // ignore
+  }
+}
+
 export function trainingTab() {
   return {
     ...defaults(),
@@ -97,6 +115,25 @@ export function trainingTab() {
       if (this.skill && ch.skills?.[this.skill] != null) {
         this.currentSkill = ch.skills[this.skill] as number;
       }
+      // Same for "% to next" — Death sim and Training share this per skill.
+      if (this.skill && ch.pctToNextBySkill?.[this.skill] != null) {
+        this.pctToNext = ch.pctToNextBySkill[this.skill] as number;
+      }
+
+      // Consistency repair: if "Skill to train" is empty (e.g. left over from
+      // a previous session or a dropdown reset), the dependent inputs MUST be
+      // blank. They only make sense paired with a selected skill.
+      if (!this.skill) {
+        this.clearSkillDependents();
+      }
+
+      // Reactive guard for the same invariant going forward — whenever the
+      // user picks "Select skill" again the inputs clear automatically.
+      // Cast: Alpine's $watch isn't in our local type defs.
+      (this as unknown as { $watch: (path: string, cb: (v: unknown) => void) => void })
+        .$watch("skill", (value) => {
+          if (!value) this.clearSkillDependents();
+        });
 
       window.addEventListener(RESET_EVENT, () => this.reset());
 
@@ -111,6 +148,7 @@ export function trainingTab() {
           if (this.skill && !this.availableSkills.find((s) => s.skill === this.skill)) {
             this.skill = "";
             this.currentSkill = null;
+            this.pctToNext = null;
             this.showResults = false;
             this.save();
           }
@@ -121,6 +159,15 @@ export function trainingTab() {
           const incoming = detail.skills[this.skill];
           if (incoming != null && incoming !== this.currentSkill) {
             this.currentSkill = incoming as number;
+            this.save();
+          }
+        }
+
+        // "% to next" propagation (CharacterSheet → Training)
+        if (this.skill && detail.pctToNextBySkill) {
+          const incomingPct = detail.pctToNextBySkill[this.skill];
+          if (incomingPct != null && incomingPct !== this.pctToNext) {
+            this.pctToNext = incomingPct as number;
             this.save();
           }
         }
@@ -258,13 +305,28 @@ export function trainingTab() {
 
     // ---- Mutations ----
 
+    /** Force Current Skill / % to next / showResults blank — used whenever
+     *  the "Skill to train" dropdown is cleared to "Select skill". */
+    clearSkillDependents() {
+      let touched = false;
+      if (this.currentSkill !== null) { this.currentSkill = null; touched = true; }
+      if (this.pctToNext !== null)    { this.pctToNext = null;    touched = true; }
+      if (this.showResults)           { this.showResults = false; touched = true; }
+      if (touched) this.save();
+    },
+
     onSkillChange() {
-      // Always re-sync currentSkill from character on skill change.
+      // Re-sync currentSkill AND "% to next" from character on skill change.
       const ch = readCharacter();
       const charSkill = ch.skills?.[this.skill];
       this.currentSkill =
         charSkill != null && Number.isFinite(charSkill)
           ? (charSkill as number)
+          : null;
+      const charPct = ch.pctToNextBySkill?.[this.skill];
+      this.pctToNext =
+        charPct != null && Number.isFinite(charPct)
+          ? (charPct as number)
           : null;
       this.save();
     },
@@ -278,11 +340,20 @@ export function trainingTab() {
     },
 
     onPctChange() {
-      // Clamp to [0, 100]. 100 = just dinged the current level (no progress yet).
+      // Clamp to [0, 100] and round to 2 decimals — matches the in-game
+      // skill display ("Sword 80 (42.50%)") and the Death sim input.
       const v = Number(this.pctToNext);
+      let final: number | null;
       if (Number.isFinite(v)) {
-        if (v < 0) this.pctToNext = 0;
-        else if (v > 100) this.pctToNext = 100;
+        const clamped = Math.max(0, Math.min(100, v));
+        final = Math.round(clamped * 100) / 100;
+        this.pctToNext = final;
+      } else {
+        final = null;
+      }
+      // Mirror to the character store so the Death sim picks it up too.
+      if (this.skill) {
+        writeCharacterSkillPct(this.skill, final);
       }
       this.save();
     },

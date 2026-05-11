@@ -139,10 +139,12 @@ This is the suggested build order. Don't feel pressured to do it all at once. Ea
    - Name input, vocation dropdown, Promotion checkbox
    - Level + Experience (bidirectional sync via Tibia formula)
    - Skills section (filtered by vocation, "Show more" toggle)
-   - Blessings (7 colored squares, clickable)
+   - Blessings: **lvl 1-20** shows a single "Adventurer's Blessing" box (free, PvP-only protection); **lvl 21+** shows **8 squares** = 7 regular blessings + Twist of Fate
    - Skull selector (No skull / White / Red / Black) — defaults to No skull
    - Sprite placeholder (CSS divs, no real Tibia sprites yet)
-   - "Simulate Death" button (red gradient)
+   - "Simulate Death" button (red gradient) — reads the selected skull to pick the death type (PvE / White / Red / Black) and applies the **exact** TibiaWiki formulas
+   - Death summary table (Level / Total exp / Regular bless / Twist of Fate, before → after) with a "Want to know skill exp loss?" expansion that asks for "% to next" per vocation skill and computes the new skill state
+   - "Revive" button (green gradient) appears below Simulate Death after a death — restores exp/level/blessings but preserves skill levels and "% to next" inputs
 4. **Reset button** in header that clears EVERYTHING (character, training inputs, loot split, hunt history)
 
 After Phase 1: site looks complete but only the character sheet works. **You can ship this.** Cloudflare Pages auto-deploys.
@@ -214,41 +216,88 @@ const minLevel = Math.ceil(level * 2/3);
 const maxLevel = Math.floor(level * 3/2);
 ```
 
-### Death loss (approximate, refine with TibiaPal source if needed)
+### Death loss (EXACT — TibiaWiki Death page, verified)
+
+Sources: https://tibia.fandom.com/wiki/Death · https://tibia.fandom.com/wiki/Blessings · https://tibia.fandom.com/wiki/Twist_of_Fate · https://tibia.fandom.com/wiki/Adventurer%27s_Blessing · https://tibia.fandom.com/wiki/Skull_System
+
+**Maximum experience loss before reductions:**
 ```js
-// PvE base loss: 10% of current level's exp
-// Each blessing reduces ~11.4% of loss (max ~80% reduction with all 7)
-const blessReduction = (blessingsActive / 7) * 0.8;
-const lossPct = 0.10 * (1 - blessReduction);
-const expLost = expFor(currentLevel) * lossPct;
-```
-
-### Twist of Fate logic
-- PvE death with Twist of Fate active: keep 1 blessing (7 → 1)
-- PvP death (any skull): lose all blessings including Twist of Fate (7 → 0)
-
-### Backpack drop warning
-- If active blessings < 5: show warning that backpack and equipped items may drop on death
-
-### Training: charges per skill point (approximation, refine if you find better data)
-```js
-function chargesPerSkillPoint(skill, current) {
-  const base = (skill === 'Magic level') ? 1500 : 80;
-  const safeLevel = Math.max(0, Math.min(120, Math.floor(current) - 10));
-  return Math.round(base * Math.pow(1.05, safeLevel));
+// Level 1-23: flat 10% of total accumulated exp.
+// Level 24+:  ((x+50)/100) * 50 * (x² − 5x + 8)  where x = current level
+function maxExperienceLoss(level, totalExp) {
+  if (level <= 23) return totalExp * 0.10;
+  return ((level + 50) / 100) * 50 * (level * level - 5 * level + 8);
 }
 ```
 
-### Exercise weapons stats
-```
-Exercise: 500 charges,    25,000 gp NPC price
-Durable:  1,800 charges,  75,000 gp NPC price
-Lasting:  14,400 charges, 540,000 gp NPC price, 1.1x rate bonus
+**Reductions are ADDITIVE (NOT multiplicative):**
+```js
+// Promotion: −30%. Each regular blessing: −8%. Twist of Fate does NOT reduce.
+// Maximum reduction with all 7 regular blessings + promotion = 86%.
+factor = max(0, 1 − regularBlessings * 0.08 − (promoted ? 0.30 : 0));
+expLost = maxExperienceLoss * factor;
 ```
 
-### Tibia Coin threshold
-- Above 13,900 gp per TC: buy weapons with gold
-- Below: buy directly from Tibia Store (cheaper)
+Skill loss + spent-mana loss use the **same percentage** as exp loss applied
+to the player's accumulated skill tries (verified by TibiaWiki + tibia.com
+news/944 + mathiasbynens' calculations on r/TibiaMMO matching to the gp).
+
+### Adventurer's Blessing (lvl 1-20, free)
+- Granted automatically at character creation
+- Active while `level >= 1 && level <= 20`
+- **PvP-only protection**: 100% — no exp/skill/item loss on PvP death
+- Does **NOT** protect PvE death — at low levels the 10% rule still applies
+- Lost permanently on (a) reaching level 21 the first time, or (b) attacking another player first
+
+### Twist of Fate behavior
+- Does **NOT** reduce experience or skill loss directly
+- Does **NOT** prevent equipment drop on its own
+- On a **PvE** death: regular blessings are consumed; ToF stays
+- On a **PvP** death (no skull / white skull):
+  - With ToF + regular blessings → only ToF is consumed; regulars survive
+  - With ToF + AoL but no regulars → only ToF is consumed; AoL survives
+  - With ToF only (no regulars, no AoL) → ToF is preserved (nothing to protect)
+
+### Item Loss table (TibiaWiki Death — graduated by regular-blessing count)
+
+| Regular bless | Container drop | Per-equipped-item drop |
+|---|---|---|
+| 0 | 100% | 10% |
+| 1 | 70%  | 7% |
+| 2 | 45%  | 4.5% |
+| 3 | 25%  | 2.5% |
+| 4 | 10%  | 1% |
+| 5+ | 0%  | 0% |
+
+Twist of Fate doesn't count toward item-drop protection.
+
+### Skull behavior on death
+
+| Skull | Items | Regular bless | Twist of Fate | AoL |
+|---|---|---|---|---|
+| **None / White** | Use Item Loss table | Stay if ToF protects, else lost | Consumed first if there's something to protect | Stays |
+| **Red** | ALL drop | All lost | **Stays** (TibiaWiki Skull System) | Lost |
+| **Black** | ALL drop | All lost | Lost | Lost |
+
+Black skull also revives at temple with 40 HP and 0 mana.
+
+**Out of scope (intentional):** Unfair Fight reduction (PvP where killers' total levels > victim) and Retro Hardcore PvP modifiers.
+
+### Exercise weapons stats (verified — TibiaWiki Exercise_Weapon)
+
+| Type | Charges | Mana points | Use time | NPC price (gp) | Store price (TC) |
+|---|---|---|---|---|---|
+| Exercise (regular) | 500    |   300,000 | 16m 40s | 347,222    | 25  |
+| Durable Exercise   | 1,800  | 1,080,000 | 1h      | 1,250,000  | 90  |
+| Lasting Exercise   | 14,400 | 8,640,000 | 8h      | 10,000,000 | 720 |
+
+- Lasting = exactly 8× Durable (NO 1.1x rate bonus — that was a myth in older docs)
+- Training weapons (50 charges, free, on-tile only) are excluded from the calculator: they can't be bought
+- All vocations progress their main skill at the same rate per mana point on these weapons (vocation constant baked into the points-per-skill-level formula)
+
+### Tibia Coin threshold (in code: `TC_THRESHOLD_GP = 14000`)
+- Above 14,000 gp per TC: buy weapons with gold (NPC, paying gp directly)
+- Below 14,000 gp per TC: buy directly from Tibia Store with TC (cheaper)
 
 ### Loot Split algorithm (formula from TibiaPal/TibiaMaps)
 ```js
@@ -369,39 +418,64 @@ const IMBUE_PRICES = { basic: '10,000', intricate: '25,000', powerful: '250,000'
 
 ## State management
 
-**Single global store via localStorage**:
+**Stores (one localStorage key per Alpine component):**
+
 ```js
+// 'tibiaplanner.character'
 {
-  character: {
-    name: '',
-    vocation: '',
-    promotion: false,
-    level: null,
-    experience: null,
-    skills: { /* skill name -> value */ },
-    blessings: [true,true,true,true,true,true,true],
-    skull: 'none'
-  },
-  training: {
-    skill: '',
-    currentSkill: null,
-    pctToNext: null,
-    targetSkill: null,
-    doubleEvent: false,
-    privateDummy: false,
-    selectedWeapon: null
-  },
-  lootSplit: {
-    history: []  // max 15 entries
-  },
-  ui: {
-    activeTab: 'training',
-    showAllSkills: false
-  }
+  name: '',
+  vocation: '',
+  promotion: false,
+  level: null,
+  experience: null,
+  skills: { /* skill name -> value */ },
+  // 8 booleans: indices 0-6 = the 7 regular blessings counted by the
+  // death-penalty formula, index 7 = Twist of Fate.
+  blessings: [true,true,true,true,true,true,true,true],
+  skull: 'none',
+  showAllSkills: false,
+  // Adventurer's Blessing (auto for lvl 1-20). Toggle that simulates the
+  // "I attacked first and lost it" case without manipulating the level.
+  adventurersLost: false,
+  // "% to next" per skill (in-game value). Shared bidirectionally with the
+  // Training tab via `character:updated` events.
+  pctToNextBySkill: { /* skill name -> 0..100 (2 decimals) */ }
 }
+
+// 'tibiaplanner.training'
+{
+  skill: '',          // empty == "Select skill" — forces dependent fields blank
+  currentSkill: null,
+  pctToNext: null,
+  targetSkill: null,
+  doubleEvent: false,
+  privateDummy: false,
+  loyalty: 0,
+  tcOverThreshold: true,
+  showResults: false
+}
+
+// 'tibiaplanner.loot'  — { rawLog, history (max 15), historyOpen }
+// 'tibiaplanner.activeTab' — 'training' | 'loot' | 'imbuements'
 ```
 
-**Reset action** must clear ALL of the above and reset to defaults (skull: 'none', blessings all true, no character data).
+**Cross-component sync:** writes to the character store dispatch a
+`character:updated` CustomEvent. The Training tab listens to mirror its
+local `currentSkill` and `pctToNext` for the selected skill. The Death sim
+listens to mirror skill values and `pctToNextBySkill`. Loop guards skip
+no-op writes.
+
+**Ephemeral character-sheet state** (not persisted): `lastDeath` (the
+before/after snapshot used by the Death summary table + Revive) and
+`skillLossOpen` (collapse/expand of the skill-loss expansion).
+
+**Reset action** must clear ALL of the above and reset to defaults
+(skull: 'none', blessings all true including ToF, adventurersLost: false,
+pctToNextBySkill empty, no character data).
+
+**Migrations on load:** old saves with a 7-slot `blessings` array are
+auto-migrated to the 8-slot layout (Blood of the Mountain inserted at
+index 5 defaulted to `true`; ToF moves from index 6 → 7).
 
 ---
 
@@ -456,11 +530,12 @@ No automated tests for now. Solo dev project — tests add maintenance burden th
 
 ## Known unknowns (TODO, no rush)
 
-- [ ] Verify exact charges-per-skill-point formula from TibiaPal `/scripts/exercise.js` and `/scripts/offlinetraining.js`
-- [ ] Verify Imbuement ingredient lists for Damage and Protection imbuements
-- [ ] Confirm Twist of Fate logic edge cases
-- [ ] Decide final domain name and logo (placeholder: "YourTibiaSite" with gradient "T" mark)
+- [ ] Verify Imbuement ingredient lists for Damage and Protection imbuements (Utility list is in this doc; Damage/Protection arrays only have `name`/`sub`)
+- [ ] Verify the **gp** prices listed for Imbuements (10k/25k/250k) against current TibiaWiki — those numbers are old and may have moved
+- [ ] Decide final domain name and logo (placeholder: "TibiaPlan" wordmark + logo PNG already in /public)
 - [ ] Source for sprites (Phase 5+): apply to Tibia fansite program
+- [ ] Add Mirra image at `/public/mirra.png` for the donate page (currently a CSS placeholder)
+- [ ] Consider showing the **% to next** UX label more prominently — both the Training calc and the Death-sim skill-loss table interpret it as "% completed" (in-game value), but the Training calc result still says "X% remaining → next level". Not a bug, but could be confusing for users who haven't read the labels carefully
 
 ---
 
@@ -474,6 +549,10 @@ Things that have wasted time in iteration and should NOT be redone:
 - Don't separate Death Simulator into its own tab (it's part of Character Sheet)
 - Don't show "Loot Split formula" UI (just textarea + Calculate button + result + history)
 - Don't add ads, pop-ups, newsletter modals, "share to Twitter" buttons, or any other engagement growth-hacking. The site stays clean.
+- Don't apply blessing/promotion reductions multiplicatively. **They are additive** per TibiaWiki: `factor = 1 − bless×0.08 − promo×0.30`. With promo + 7 bless that gives 86% reduction, not 58%.
+- Don't use `<input type="number">` for decimal/float inputs. Browsers + Alpine `:value` cause cursor jumps and "100" clamping when the controlled value re-renders mid-typing. Use `type="text"` + `inputmode="decimal"` and commit on `@blur`.
+- Don't put apostrophes inside Astro `<template>` text content. Use `&apos;` — the TS/JSX parser inside Alpine templates treats `'` as a string delimiter and the build breaks confusingly.
+- Don't introduce a new "% remaining" vs "% completed" convention. Stick to **% completed** (matches the in-game skill display) — that's what `pointsNeeded` and `findSkillAndPctFromPoints` use today.
 
 ---
 

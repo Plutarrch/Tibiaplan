@@ -33,11 +33,12 @@ export interface PointsNeededInput {
 /**
  * Points needed to advance from current skill to target.
  *
- * Convention for `pctToNext` (matches TibiaPal exactly so users can compare):
- *   100 = just dinged the current level (no progress yet toward next)
- *     0 = at the boundary of the next level (full level remaining is "drained")
+ * Convention for `pctToNext` matches the in-game skill display (the value
+ * Tibia shows next to your skill, e.g. "Sword 80 (42.50%)"):
+ *     0 = just dinged this skill — no progress yet toward the next level
+ *   100 = effectively at the next level
  *
- * I.e. pctToNext is the % of the current level that is still "to go".
+ * I.e. pctToNext is the % of the current level that is ALREADY trained.
  */
 export function pointsNeeded(input: PointsNeededInput): number {
   const totalAtCurrent = totalPointsAtSkill(
@@ -48,9 +49,8 @@ export function pointsNeeded(input: PointsNeededInput): number {
     input.vocationConstant,
     input.currentSkill + 1,
   );
-  const pctRemaining = Math.max(0, Math.min(100, input.pctToNext));
-  // Already-trained portion of the current level = (100 - remaining%) of the level cost.
-  const trained = (totalAtNext - totalAtCurrent) * ((100 - pctRemaining) / 100);
+  const pctCompleted = Math.max(0, Math.min(100, input.pctToNext));
+  const trained = (totalAtNext - totalAtCurrent) * (pctCompleted / 100);
   const startPoints = totalAtCurrent + trained;
   const targetPoints = totalPointsAtSkill(
     input.vocationConstant,
@@ -67,8 +67,8 @@ function startPointsFor(
 ): number {
   const totalAtCurrent = totalPointsAtSkill(vocationConstant, currentSkill);
   const totalAtNext = totalPointsAtSkill(vocationConstant, currentSkill + 1);
-  const pctRemaining = Math.max(0, Math.min(100, pctToNext));
-  const trained = (totalAtNext - totalAtCurrent) * ((100 - pctRemaining) / 100);
+  const pctCompleted = Math.max(0, Math.min(100, pctToNext));
+  const trained = (totalAtNext - totalAtCurrent) * (pctCompleted / 100);
   return totalAtCurrent + trained;
 }
 
@@ -275,6 +275,28 @@ export function computeSmartMix(
     costGP: costTC * tcMarketPriceGp,
     hours,
   };
+}
+
+/**
+ * Death skill loss — applies the same effective percentage that was lost on
+ * exp to the player's accumulated skill tries, then converts back to a
+ * (skill, % remaining) pair.
+ *
+ * `effectivePctLoss` should be (expBefore - expAfter) / expBefore so that
+ * promotion + blessings reductions are already baked in (TibiaWiki: skill
+ * loss uses the same percentage as exp loss).
+ */
+export function computeSkillLossAfterDeath(
+  vocationConstant: number,
+  currentSkill: number,
+  pctToNext: number,
+  effectivePctLoss: number,
+): { level: number; pct: number } {
+  const safePct = Math.max(0, Math.min(1, effectivePctLoss));
+  const startPoints = startPointsFor(vocationConstant, currentSkill, pctToNext);
+  const triesLost = startPoints * safePct;
+  const remaining = Math.max(0, startPoints - triesLost);
+  return findSkillAndPctFromPoints(vocationConstant, remaining);
 }
 
 // ---- Display formatters ----
