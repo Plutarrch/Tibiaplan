@@ -1,0 +1,20 @@
+---
+/**
+ * Tibia Drome countdown card. Drops into the sidebar where Featured
+ * Resellers used to live. Compact: title, countdown, attribution.
+ */
+---
+
+<article x-data="dromeTimer" class="w-[300px] max-w-full rounded-md border border-border-subtle bg-bg-surface p-4">
+  <header class="flex items-baseline justify-between gap-2">
+    <h3 class="text-[12px] font-medium tracking-wide text-text-primary">Tibia Drome</h3>
+    <span class="text-[9px] uppercase tracking-wider text-text-tertiary">Reset</span>
+  </header>
+  <p
+    class="mt-2 font-mono text-[20px] font-semibold tabular-nums text-accent-violet"
+    x-text="countdown"
+  ></p>
+  <p class="mt-1 text-[10px] text-text-tertiary">
+    Next season starts at server save.
+  </p>
+</article>

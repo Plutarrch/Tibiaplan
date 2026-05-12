@@ -1,0 +1,31 @@
+---
+/**
+ * Rashid daily location widget. Sits in the Header alongside BoostedToday,
+ * shows the city Rashid is in right now. Sprite at /sprites/npcs/rashid.png
+ * (drop it in when you have it; the box falls back gracefully if missing).
+ */
+---
+
+<a
+  x-data="rashidLocation"
+  x-show="city"
+  x-cloak
+  :href="wikiUrl"
+  target="_blank"
+  rel="noopener noreferrer"
+  class="hidden items-center gap-2 rounded border border-border-subtle bg-bg-sunken px-2 py-1 text-[11px] transition-colors hover:border-accent-violet md:flex"
+  :title="`Rashid is in ${city} today`"
+>
+  <img
+    src="/sprites/npcs/rashid.webp"
+    alt="Rashid"
+    class="h-9 w-9 object-contain"
+    loading="lazy"
+    decoding="async"
+    onerror="this.style.display='none'"
+  />
+  <span class="flex flex-col leading-tight">
+    <span class="text-[9px] uppercase tracking-wider text-text-tertiary">Rashid</span>
+    <span class="font-medium text-text-primary" x-text="city"></span>
+  </span>
+</a>

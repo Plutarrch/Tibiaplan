@@ -1,9 +1,9 @@
 const STORAGE_KEY = "tibiaplanner.activeTab";
 const RESET_EVENT = "app:reset";
 
-export type Tab = "training" | "loot" | "imbuements";
+export type Tab = "training" | "loot" | "imbuements" | "character-search";
 
-const VALID_TABS: readonly Tab[] = ["training", "loot", "imbuements"];
+const VALID_TABS: readonly Tab[] = ["training", "loot", "imbuements", "character-search"];
 
 export function tabsControl() {
   return {

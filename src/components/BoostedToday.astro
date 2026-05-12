@@ -57,9 +57,11 @@
     </span>
   </a>
 
-  <!-- Countdown to next server save (10:00 Europe/Berlin) -->
-  <div class="flex flex-col items-end leading-tight" x-show="countdown">
-    <span class="text-[9px] uppercase tracking-wider text-text-tertiary">Next change</span>
-    <span class="font-medium tabular-nums text-text-secondary" x-text="countdown"></span>
-  </div>
+  <!--
+    "Next change" pill lives in its own component (NextChange.astro) and
+    sits AFTER Rashid in the header, since Creature / Boss / Rashid all
+    rotate at the same server save time. We still keep the countdown logic
+    inside this Alpine state too — refreshCountdown() invalidates the
+    boosted-pair cache as the timer crosses zero.
+  -->
 </div>

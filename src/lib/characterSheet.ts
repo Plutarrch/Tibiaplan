@@ -94,11 +94,18 @@ export function characterSheet() {
       window.addEventListener(RESET_EVENT, () => this.reset());
 
       // Listen for external writes (e.g. the Training tab updating a skill
-      // value or "% to next"). Mirror the change into in-memory state without
-      // re-saving (the writer already persisted), so we avoid loops.
+      // value or "% to next", or the Character Search tab pushing a full
+      // character into the profile). Mirror the change into in-memory state
+      // without re-saving (the writer already persisted), so we avoid loops.
       window.addEventListener(UPDATED_EVENT, ((e: Event) => {
         const detail = (e as CustomEvent).detail;
         if (!detail || typeof detail !== "object") return;
+
+        // Top-level character fields (Character Search → "Use as profile").
+        if (typeof detail.name === "string") this.name = detail.name;
+        if (typeof detail.vocation === "string") this.vocation = detail.vocation;
+        if (typeof detail.promotion === "boolean") this.promotion = detail.promotion;
+        if (detail.level !== undefined) this.level = detail.level;
 
         if (detail.skills) {
           let changed = false;

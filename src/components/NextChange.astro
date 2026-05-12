@@ -1,0 +1,17 @@
+---
+/**
+ * "Next change" countdown — Creature / Boss / Rashid all rotate together
+ * at 10:00 Europe/Berlin server save, so this pill lives at the end of
+ * the header group and applies to all three.
+ */
+---
+
+<div
+  x-data="nextChangeCountdown"
+  x-show="countdown"
+  x-cloak
+  class="hidden flex-col items-end leading-tight md:flex"
+>
+  <span class="text-[9px] uppercase tracking-wider text-text-tertiary">Next change</span>
+  <span class="font-medium tabular-nums text-text-secondary" x-text="countdown"></span>
+</div>

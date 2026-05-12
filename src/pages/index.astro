@@ -7,6 +7,7 @@ import CharacterSheet from "../components/CharacterSheet.astro";
 import TrainingTab from "../components/tabs/TrainingTab.astro";
 import LootSplitTab from "../components/tabs/LootSplitTab.astro";
 import ImbuementsTab from "../components/tabs/ImbuementsTab.astro";
+import CharacterSearchTab from "../components/tabs/CharacterSearchTab.astro";
 ---
 
 <Layout>
@@ -60,6 +61,14 @@ import ImbuementsTab from "../components/tabs/ImbuementsTab.astro";
               >
                 Imbuements
               </button>
+              <button
+                type="button"
+                class="rounded px-4 py-2 text-[12px] transition-colors"
+                :class="active === 'character-search' ? 'is-active' : 'border border-border-subtle bg-bg-surface text-text-secondary hover:border-border-emphasis hover:text-text-primary'"
+                @click="setActive('character-search')"
+              >
+                Character Search
+              </button>
             </nav>
 
             <div class="mt-4">
@@ -69,6 +78,10 @@ import ImbuementsTab from "../components/tabs/ImbuementsTab.astro";
 
               <div x-show="active === 'loot'" x-cloak>
                 <LootSplitTab />
+              </div>
+
+              <div x-show="active === 'character-search'" x-cloak>
+                <CharacterSearchTab />
               </div>
 
               <!--

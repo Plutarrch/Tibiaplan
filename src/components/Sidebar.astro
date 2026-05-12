@@ -1,18 +1,12 @@
 ---
 import AdSlot from "./AdSlot.astro";
+import DromeTimer from "./DromeTimer.astro";
 ---
 
 <aside class="flex flex-col items-center gap-4 lg:items-stretch">
   <AdSlot width={300} height={250} />
 
-  <div class="w-[300px] max-w-full rounded-md border border-border-subtle bg-bg-surface p-4">
-    <h3 class="text-[12px] font-medium tracking-wide text-text-primary">
-      Featured Resellers
-    </h3>
-    <p class="mt-2 text-[11px] leading-relaxed text-text-tertiary">
-      Spot available — contact us
-    </p>
-  </div>
+  <DromeTimer />
 
   <AdSlot width={300} height={200} />
 

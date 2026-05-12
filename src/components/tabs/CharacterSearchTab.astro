@@ -1,0 +1,167 @@
+---
+/**
+ * Character Search tab — Tibia Stalker frontend.
+ *
+ * Looks up a Tibia character by name and shows:
+ *   - Primary info (vocation / level / world / last seen / former names
+ *     / former worlds / traded)
+ *   - Other PUBLIC characters on the same account (when not hidden)
+ *   - PROBABLE characters when the account is hidden, ranked by the
+ *     number of world-online overlap matches (Tibia Stalker's heuristic)
+ *
+ * Click any alt → searches that one (cascading investigation UX).
+ * "Use as my Character Profile" → autofills the Character Sheet.
+ */
+---
+
+<div x-data="characterSearch" class="rounded-md border border-border-subtle bg-bg-surface p-6">
+  <div class="flex flex-wrap items-baseline justify-between gap-3">
+    <h2 class="text-[14px] font-medium tracking-wide text-text-primary">Character Search</h2>
+    <p class="text-[10px] uppercase tracking-[0.1em] text-text-tertiary">
+      Powered by Tibia Stalker
+    </p>
+  </div>
+
+  <p class="mt-2 text-[11px] leading-relaxed text-text-secondary">
+    Look up any Tibia character. We show their public profile and the other
+    characters likely on the same account — including hidden ones.
+  </p>
+
+  <!-- Search input -->
+  <form
+    class="mt-5 flex flex-wrap items-stretch gap-2"
+    @submit.prevent="search()"
+  >
+    <input
+      type="text"
+      x-model="query"
+      placeholder="Character name (e.g. Bhaen)"
+      autocomplete="off"
+      spellcheck="false"
+      class="min-w-0 flex-1 rounded border border-border-subtle bg-bg-sunken px-3 py-2 text-[12px] text-text-primary placeholder-text-tertiary focus:border-accent-violet focus:outline-none"
+    />
+    <button
+      type="submit"
+      :disabled="loading"
+      class="is-active rounded px-4 py-2 text-[12px] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+    >
+      <span x-show="!loading">Search</span>
+      <span x-show="loading" x-cloak>Searching…</span>
+    </button>
+  </form>
+
+  <!-- Error -->
+  <p
+    x-show="error"
+    x-cloak
+    class="mt-3 rounded border border-danger/40 bg-danger/10 px-3 py-2 text-[11px] text-danger"
+    x-text="error"
+  ></p>
+
+  <!-- Result panel -->
+  <article x-show="result" x-cloak class="mt-6 space-y-5">
+    <!-- Primary character card -->
+    <header class="rounded-md border border-accent-violet/40 bg-bg-sunken p-5">
+      <div class="flex flex-wrap items-baseline justify-between gap-3">
+        <h3 class="text-[20px] font-semibold leading-tight text-text-primary" x-text="result?.name"></h3>
+        <span class="text-[11px] text-text-tertiary" x-text="lastSeen()"></span>
+      </div>
+
+      <p class="mt-1 text-[12px] text-text-secondary">
+        <span x-text="result?.vocation"></span>
+        <span class="text-text-tertiary"> · Lvl </span>
+        <span class="font-medium text-text-primary" x-text="result?.level"></span>
+        <span class="text-text-tertiary"> · </span>
+        <span x-text="result?.world"></span>
+      </p>
+
+      <!-- Former names -->
+      <div x-show="result?.formerNames?.length" x-cloak class="mt-3 flex items-baseline gap-2 text-[11px]">
+        <span class="text-text-tertiary">Former names:</span>
+        <span class="text-text-secondary" x-text="result?.formerNames?.join(', ')"></span>
+      </div>
+
+      <!-- Former worlds -->
+      <div x-show="result?.formerWorlds?.length" x-cloak class="mt-1 flex items-baseline gap-2 text-[11px]">
+        <span class="text-text-tertiary">Former worlds:</span>
+        <span class="text-text-secondary" x-text="result?.formerWorlds?.join(', ')"></span>
+      </div>
+
+      <!-- Traded -->
+      <div x-show="result?.traded" x-cloak class="mt-1 text-[11px]">
+        <span class="rounded bg-gold/15 px-1.5 py-0.5 text-gold">Traded character</span>
+      </div>
+
+      <button
+        type="button"
+        @click="useAsProfile()"
+        class="mt-4 rounded border border-accent-violet/60 bg-bg-primary px-3 py-1.5 text-[11px] font-medium text-accent-violet transition-colors hover:bg-accent-violet hover:text-bg-primary"
+      >
+        🎯 Use as my Character Profile
+      </button>
+    </header>
+
+    <!-- Public alts on same account -->
+    <section x-show="result?.otherVisibleCharacters?.length" x-cloak>
+      <h4 class="border-b border-border-subtle pb-2 text-[12px] font-medium uppercase tracking-wider text-text-secondary">
+        Other characters on this account
+      </h4>
+      <ul class="mt-3 space-y-1.5">
+        <template x-for="alt in result?.otherVisibleCharacters ?? []" :key="alt.otherCharacterName">
+          <li>
+            <button
+              type="button"
+              @click="searchAlt(alt.otherCharacterName)"
+              class="w-full rounded border border-border-subtle bg-bg-sunken px-3 py-2 text-left text-[12px] text-text-primary transition-colors hover:border-accent-violet"
+              x-text="alt.otherCharacterName"
+            ></button>
+          </li>
+        </template>
+      </ul>
+    </section>
+
+    <!-- Probable hidden alts -->
+    <section x-show="result?.possibleInvisibleCharacters?.length" x-cloak>
+      <header class="flex flex-wrap items-baseline justify-between gap-3 border-b border-border-subtle pb-2">
+        <h4 class="text-[12px] font-medium uppercase tracking-wider text-text-secondary">
+          Probable hidden characters
+        </h4>
+        <span class="text-[10px] text-text-tertiary">
+          Higher matches = stronger correlation
+        </span>
+      </header>
+
+      <ul class="mt-3 space-y-1.5">
+        <template x-for="alt in result?.possibleInvisibleCharacters ?? []" :key="alt.otherCharacterName">
+          <li>
+            <button
+              type="button"
+              @click="searchAlt(alt.otherCharacterName)"
+              class="grid w-full grid-cols-[1fr_auto_auto] items-baseline gap-3 rounded border border-border-subtle bg-bg-sunken px-3 py-2 text-left text-[12px] transition-colors hover:border-accent-violet"
+            >
+              <span class="truncate text-text-primary" x-text="alt.otherCharacterName"></span>
+              <span class="rounded px-1.5 py-0.5 text-[10px] font-medium" :class="confidenceBucket(alt.numberOfMatches) === 'high' ? 'bg-accent-violet/25 text-accent-violet' : confidenceBucket(alt.numberOfMatches) === 'medium' ? 'bg-accent-cyan/15 text-accent-cyan' : 'bg-text-tertiary/15 text-text-tertiary'" x-text="alt.numberOfMatches + ' matches'"></span>
+              <span class="hidden text-[10px] text-text-tertiary sm:inline" x-text="alt.firstMatchDateOnly + ' to ' + alt.lastMatchDateOnly"></span>
+            </button>
+          </li>
+        </template>
+      </ul>
+    </section>
+
+    <!-- No alts found -->
+    <p
+      x-show="result && !result.otherVisibleCharacters?.length && !result.possibleInvisibleCharacters?.length"
+      x-cloak
+      class="rounded border border-border-subtle bg-bg-sunken px-3 py-2 text-[11px] text-text-tertiary"
+    >
+      No alts detected. The account may be tightly hidden, or this character
+      has not overlapped enough with others to produce a correlation.
+    </p>
+
+    <!-- Disclaimer (same gold-warning style as the blessings warning) -->
+    <p class="text-[10px] text-gold">
+      ⚠ All data is public. Matches are probabilistic suggestions based on
+      account-correlation patterns, not certainties.
+    </p>
+  </article>
+</div>
