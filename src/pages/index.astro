@@ -119,15 +119,16 @@ import CharacterSearchTab from "../components/tabs/CharacterSearchTab.astro";
 
       <!--
         Imbuements sections (Combat / Skill Boost / Protection): full-width
-        row below the [main + sidebar] grid. Together with the narrow header
-        card above (in the main column), they form an L-step naturally — no
-        clip-path, no negative margin, no AD repositioning. All 4 ADs stay
-        locked at their natural sidebar positions.
+        row below the [main + sidebar] grid. lg:-mt-4 trims the dead space
+        between the Imbuements header card (in main column) and the sections
+        card. The combo of compact Drome card + AD 300×200 (instead of 250)
+        already shrinks the sidebar enough that main is the taller column;
+        this -16px just absorbs the residual breathing room.
       -->
       <div
         x-show="active === 'imbuements'"
         x-cloak
-        class="mx-auto max-w-7xl px-4 pb-6"
+        class="mx-auto max-w-7xl px-4 pb-6 lg:-mt-4"
       >
         <ImbuementsTab />
       </div>
