@@ -16,6 +16,8 @@
  * scan cycle so we never have data more stale than the upstream itself.
  */
 
+import { expFor } from "../data/formulas";
+
 const STORAGE_PREFIX = "tibiaplanner.charsearch.";
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const API_BASE = "https://api.tibiastalker.pl/api/tibia-stalker/v1";
@@ -206,11 +208,17 @@ export function characterSearch() {
         this.error = "Couldn't auto-fill — vocation not recognised";
         return;
       }
+      // Set experience to the minimum exp required for the imported level.
+      // Without this the Death Simulator drops the character to level 1
+      // (its math treats null exp as 0). Once the user wants a more precise
+      // exp value they edit the field manually; this default keeps the
+      // simulation honest from the moment of import.
       const fields = {
         name: this.result.name,
         vocation: key,
         promotion: promoted,
         level: this.result.level,
+        experience: expFor(this.result.level),
       };
       // Persist the merge so a page reload keeps the imported character.
       try {

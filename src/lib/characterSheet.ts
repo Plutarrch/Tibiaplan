@@ -106,6 +106,7 @@ export function characterSheet() {
         if (typeof detail.vocation === "string") this.vocation = detail.vocation;
         if (typeof detail.promotion === "boolean") this.promotion = detail.promotion;
         if (detail.level !== undefined) this.level = detail.level;
+        if (detail.experience !== undefined) this.experience = detail.experience;
 
         if (detail.skills) {
           let changed = false;

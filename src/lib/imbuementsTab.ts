@@ -115,5 +115,12 @@ export function imbuementsTab() {
     totalIngredients(imb: Imbuement, tier: Tier): number {
       return imb.ingredients[tier].reduce((sum, i) => sum + i.qty, 0);
     },
+
+    /** URL-safe slug for the imbuement's sprite folder. "Dragon Hide" →
+     *  "dragon_hide". Lowercase + spaces replaced by underscores, matches
+     *  the naming convention we used for the blessings folder. */
+    slug(name: string): string {
+      return name.toLowerCase().replace(/\s+/g, "_");
+    },
   };
 }

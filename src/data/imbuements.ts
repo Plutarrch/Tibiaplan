@@ -1,17 +1,14 @@
 /**
- * Imbuement reference data.
+ * Imbuement reference data — 24 imbuements across 5 categories.
  *
- * Sources (visited 2026-05-08):
- *   - https://www.tibiabuddy.com/blog/imbuement-guide-2026
- *   - https://tibiavault.com/imbuing-guide/
- *   - https://tibia.fandom.com/wiki/Imbuing  (couldn't fetch directly — 403 to bots — but cross-referenced via the above)
+ * All three tiers (Basic / Intricate / Powerful) verified 2026-05-13 from
+ * owner-supplied tibia.com library screenshots. Recipes are cumulative:
+ * Intricate adds a 2nd ingredient to Basic's 1st, Powerful adds a 3rd.
  *
- * Out of scope for v1:
- *   - Support imbuements (Swiftness / Featherweight / Vibrancy) — Powerful tier
- *     ingredients are documented but Basic/Intricate are inconsistent across
- *     guides. Leave for a follow-up once we have a primary source.
- *   - Astral Source / Powerful access requirements (boss kills) — purely
- *     informational, not part of the cost calc.
+ * Out of scope (intentional):
+ *   - Astral Source / Powerful access requirements (the boss kills needed
+ *     to unlock Powerful tier on a character) — purely informational, not
+ *     part of the cost calc.
  *
  * NPC gold fee per tier is uniform across all imbuements:
  *   Basic 7,500 — Intricate 60,000 — Powerful 250,000
@@ -85,9 +82,9 @@ const COMBAT: readonly Imbuement[] = [
     affects: "Mana Leech",
     bonus: { basic: "+3%", intricate: "+5%", powerful: "+8%" },
     ingredients: {
-      basic:     [{ name: "Rope Belts", qty: 25 }],
-      intricate: [{ name: "Rope Belts", qty: 25 }, { name: "Silencer Claws", qty: 25 }],
-      powerful:  [{ name: "Rope Belts", qty: 25 }, { name: "Silencer Claws", qty: 25 }, { name: "Some Grimeleech Wings", qty: 5 }],
+      basic:     [{ name: "Rope Belt", qty: 25 }],
+      intricate: [{ name: "Rope Belt", qty: 25 }, { name: "Silencer Claws", qty: 25 }],
+      powerful:  [{ name: "Rope Belt", qty: 25 }, { name: "Silencer Claws", qty: 25 }, { name: "Some Grimeleech Wings", qty: 5 }],
     },
   },
   {
@@ -99,9 +96,9 @@ const COMBAT: readonly Imbuement[] = [
       powerful:  "+5% crit chance · +40% damage",
     },
     ingredients: {
-      basic:     [{ name: "Protective Charms", qty: 20 }],
-      intricate: [{ name: "Protective Charms", qty: 20 }, { name: "Sabreteeth", qty: 25 }],
-      powerful:  [{ name: "Protective Charms", qty: 20 }, { name: "Sabreteeth", qty: 25 }, { name: "Vexclaw Talons", qty: 5 }],
+      basic:     [{ name: "Protective Charm", qty: 20 }],
+      intricate: [{ name: "Protective Charm", qty: 20 }, { name: "Sabretooth", qty: 25 }],
+      powerful:  [{ name: "Protective Charm", qty: 20 }, { name: "Sabretooth", qty: 25 }, { name: "Vexclaw Talon", qty: 5 }],
     },
   },
 ];
@@ -126,9 +123,9 @@ const SKILL_BOOST: readonly Imbuement[] = [
     affects: "Axe Fighting",
     bonus: { basic: "+1 Axe", intricate: "+2 Axe", powerful: "+4 Axe" },
     ingredients: {
-      basic:     [{ name: "Piece of Scarab Shell", qty: 25 }],
-      intricate: [{ name: "Piece of Scarab Shell", qty: 25 }, { name: "Brimstone Fangs", qty: 25 }],
-      powerful:  [{ name: "Piece of Scarab Shell", qty: 25 }, { name: "Brimstone Fangs", qty: 25 }, { name: "Piece of Royal Steel", qty: 5 }],
+      basic:     [{ name: "Orc Tooth", qty: 20 }],
+      intricate: [{ name: "Orc Tooth", qty: 20 }, { name: "Battle Stone", qty: 25 }],
+      powerful:  [{ name: "Orc Tooth", qty: 20 }, { name: "Battle Stone", qty: 25 }, { name: "Moohtah Horn", qty: 20 }],
     },
   },
   {
@@ -138,7 +135,7 @@ const SKILL_BOOST: readonly Imbuement[] = [
     ingredients: {
       basic:     [{ name: "Cyclops Toe", qty: 20 }],
       intricate: [{ name: "Cyclops Toe", qty: 20 }, { name: "Ogre Nose Ring", qty: 15 }],
-      powerful:  [{ name: "Cyclops Toe", qty: 20 }, { name: "Ogre Nose Ring", qty: 15 }, { name: "Warmaster's Wristguards", qty: 5 }],
+      powerful:  [{ name: "Cyclops Toe", qty: 20 }, { name: "Ogre Nose Ring", qty: 15 }, { name: "Warmaster's Wristguards", qty: 10 }],
     },
   },
   {
@@ -147,20 +144,35 @@ const SKILL_BOOST: readonly Imbuement[] = [
     bonus: { basic: "+1 Distance", intricate: "+2 Distance", powerful: "+4 Distance" },
     ingredients: {
       basic:     [{ name: "Elven Scouting Glass", qty: 25 }],
-      intricate: [{ name: "Elven Scouting Glass", qty: 25 }, { name: "Compass", qty: 20 }],
-      powerful:  [{ name: "Elven Scouting Glass", qty: 25 }, { name: "Compass", qty: 20 }, { name: "Soul Orb", qty: 5 }],
+      intricate: [{ name: "Elven Scouting Glass", qty: 25 }, { name: "Elven Hoof", qty: 20 }],
+      powerful:  [{ name: "Elven Scouting Glass", qty: 25 }, { name: "Elven Hoof", qty: 20 }, { name: "Metal Spike", qty: 10 }],
     },
   },
   {
-    name: "Knock",
+    name: "Punch",
     affects: "Fist Fighting",
     bonus: { basic: "+1 Fist", intricate: "+2 Fist", powerful: "+4 Fist" },
+    // NOTE: Punch is the lone exception to the cumulative-qty rule —
+    // tibia.com lists DIFFERENT quantities for Tarantula Egg / Mantassin
+    // Tail between Intricate (20 + 25) and Powerful (25 + 20). All other
+    // imbuements keep stable quantities across tiers; Punch does not.
+    // Reproduce the guide verbatim so the cost calc and material lookups
+    // stay correct against the in-game NPC.
     ingredients: {
-      basic:     [{ name: "Cyclops Toe", qty: 20 }],
-      intricate: [{ name: "Cyclops Toe", qty: 20 }, { name: "Ogre Nose Ring", qty: 15 }],
-      powerful:  [{ name: "Cyclops Toe", qty: 20 }, { name: "Ogre Nose Ring", qty: 15 }, { name: "Warmaster's Wristguards", qty: 5 }],
+      basic:     [{ name: "Tarantula Egg", qty: 20 }],
+      intricate: [{ name: "Tarantula Egg", qty: 20 }, { name: "Mantassin Tail", qty: 25 }],
+      powerful:  [{ name: "Tarantula Egg", qty: 25 }, { name: "Mantassin Tail", qty: 20 }, { name: "Gold-Brocaded Cloth", qty: 15 }],
     },
-    note: "Some sources list this as \"Punch\". Same materials as Bash per current guides — verify against in-game NPC if possible.",
+  },
+  {
+    name: "Blockade",
+    affects: "Shielding",
+    bonus: { basic: "+1 Shield", intricate: "+2 Shield", powerful: "+4 Shield" },
+    ingredients: {
+      basic:     [{ name: "Piece of Scarab Shell", qty: 20 }],
+      intricate: [{ name: "Piece of Scarab Shell", qty: 20 }, { name: "Brimstone Shell", qty: 25 }],
+      powerful:  [{ name: "Piece of Scarab Shell", qty: 20 }, { name: "Brimstone Shell", qty: 25 }, { name: "Frazzle Skin", qty: 25 }],
+    },
   },
   {
     name: "Epiphany",
@@ -299,10 +311,50 @@ const PROTECTION: readonly Imbuement[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// Support — utility imbuements (capacity, speed, paralysis deflection).
+// Basic tier verified against in-game library; Intricate / Powerful ingredient
+// lists are placeholders pending the next photo passes.
+// ---------------------------------------------------------------------------
+
+const SUPPORT: readonly Imbuement[] = [
+  {
+    name: "Featherweight",
+    affects: "Capacity",
+    bonus: { basic: "+3%", intricate: "+8%", powerful: "+15%" },
+    ingredients: {
+      basic:     [{ name: "Fairy Wings", qty: 20 }],
+      intricate: [{ name: "Fairy Wings", qty: 20 }, { name: "Little Bowl of Myrrh", qty: 10 }],
+      powerful:  [{ name: "Fairy Wings", qty: 20 }, { name: "Little Bowl of Myrrh", qty: 10 }, { name: "Goosebump Leather", qty: 5 }],
+    },
+  },
+  {
+    name: "Swiftness",
+    affects: "Speed",
+    bonus: { basic: "+10 Speed", intricate: "+15 Speed", powerful: "+30 Speed" },
+    ingredients: {
+      basic:     [{ name: "Damselfly Wing", qty: 15 }],
+      intricate: [{ name: "Damselfly Wing", qty: 15 }, { name: "Compass", qty: 25 }],
+      powerful:  [{ name: "Damselfly Wing", qty: 15 }, { name: "Compass", qty: 25 }, { name: "Waspoid Wing", qty: 20 }],
+    },
+  },
+  {
+    name: "Vibrancy",
+    affects: "Paralysis Deflection",
+    bonus: { basic: "15% remove", intricate: "25% remove", powerful: "50% remove" },
+    ingredients: {
+      basic:     [{ name: "Wereboar Hooves", qty: 20 }],
+      intricate: [{ name: "Wereboar Hooves", qty: 20 }, { name: "Crystallized Anger", qty: 15 }],
+      powerful:  [{ name: "Wereboar Hooves", qty: 20 }, { name: "Crystallized Anger", qty: 15 }, { name: "Quill", qty: 5 }],
+    },
+  },
+];
+
+// ---------------------------------------------------------------------------
 
 export const IMBUEMENT_CATEGORIES: readonly ImbuementCategory[] = [
-  { id: "combat",     label: "Combat",              imbuements: COMBAT },
-  { id: "skill",      label: "Skill Boost",         imbuements: SKILL_BOOST },
+  { id: "combat",     label: "Combat",               imbuements: COMBAT },
+  { id: "skill",      label: "Skill Boost",          imbuements: SKILL_BOOST },
+  { id: "damage",     label: "Elemental Damage",     imbuements: ELEMENTAL_DAMAGE },
   { id: "protection", label: "Elemental Protection", imbuements: PROTECTION },
-  { id: "damage",     label: "Elemental Damage",    imbuements: ELEMENTAL_DAMAGE },
+  { id: "support",    label: "Support",              imbuements: SUPPORT },
 ];

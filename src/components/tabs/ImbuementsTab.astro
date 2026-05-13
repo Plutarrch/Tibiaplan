@@ -37,16 +37,23 @@
               </header>
 
               <!--
-                Centered sprite slot — 96x96 placeholder. When CipSoft fansite
-                assets land, swap the inner div for an <img /> at the same
-                dimensions and the layout stays identical.
+                Sprite slot — 96×96 box that loads
+                /sprites/imbuements/{slug(name)}/{tier}.png. Pixel-art
+                preserved with image-rendering: pixelated. Empty box if
+                the sprite for the current tier hasn't been added yet
+                (onerror hides the img cleanly).
               -->
               <div class="mt-5 flex justify-center">
-                <div
-                  class="grid h-24 w-24 place-items-center rounded-md border border-border-subtle bg-bg-primary text-[10px] uppercase tracking-[0.1em] text-text-tertiary"
-                  aria-hidden="true"
-                >
-                  Sprite
+                <div class="grid h-24 w-24 place-items-center rounded-md border border-border-subtle bg-bg-primary">
+                  <img
+                    :src="`/sprites/imbuements/${slug(imb.name)}/${tierFor(imb)}.png`"
+                    :alt="`${imb.name} ${tierFor(imb)}`"
+                    class="h-full w-full object-contain p-2"
+                    style="image-rendering: pixelated;"
+                    loading="lazy"
+                    decoding="async"
+                    onerror="this.style.display='none'"
+                  />
                 </div>
               </div>
 
