@@ -154,6 +154,27 @@ export function trainingTab() {
         .$watch("skill", (value) => {
           if (!value) this.clearSkillDependents();
         });
+
+      // x-model + x-for ordering workaround. On a ClientRouter swap the
+      // page hydrates fresh: <select x-model="skill"> evaluates against
+      // the saved "Fist" BEFORE <template x-for> has emitted the matching
+      // <option value="Fist">, so the browser silently falls back to the
+      // first <option> ("Select skill"). Our reactive state is correct
+      // but the DOM is desynced. After the next tick — once x-for has
+      // settled the option list — push the value back into the DOM.
+      if (this.skill) {
+        const saved = this.skill;
+        const alpine = this as unknown as {
+          $nextTick: (cb: () => void) => void;
+          $root: HTMLElement | undefined;
+        };
+        alpine.$nextTick(() => {
+          const select = alpine.$root?.querySelector?.("select");
+          if (select instanceof HTMLSelectElement && select.value !== saved) {
+            select.value = saved;
+          }
+        });
+      }
     },
 
     /**
