@@ -1,0 +1,65 @@
+---
+/**
+ * Centralized <head> meta-tag generator. Emits the title/description plus
+ * canonical, Open Graph, and Twitter Card tags so social previews work on
+ * Discord, WhatsApp, Twitter/X, Telegram, etc.
+ *
+ * Used by Layout.astro — pages don't talk to this directly, they set props
+ * on <Layout title=... description=... /> and Layout forwards them here.
+ */
+interface Props {
+  title: string;
+  description: string;
+  canonical?: string;
+  ogImage?: string;
+  keywords?: string[];
+  noindex?: boolean;
+}
+
+const {
+  title,
+  description,
+  canonical,
+  ogImage = "/og-default.png",
+  keywords,
+  noindex = false,
+} = Astro.props;
+
+// Google truncates descriptions over ~155-160 chars in SERPs. Warn at build
+// time so we don't ship something that'll get cut mid-sentence.
+if (description.length > 160) {
+  console.warn(
+    `[SEO] description for "${title}" is ${description.length} chars (max 160). It will be truncated by Google.`
+  );
+}
+
+// Canonical URL: defaults to the current request URL resolved against the
+// configured site (Astro.site = https://tibiaplan.com from astro.config).
+const canonicalUrl =
+  canonical ?? new URL(Astro.url.pathname, Astro.site).toString();
+
+// OG/Twitter image MUST be an absolute URL — relative paths break previews
+// on most platforms.
+const absoluteOgImage = new URL(ogImage, Astro.site).toString();
+---
+
+<title>{title}</title>
+<meta name="description" content={description} />
+{keywords && keywords.length > 0 && (
+  <meta name="keywords" content={keywords.join(", ")} />
+)}
+<link rel="canonical" href={canonicalUrl} />
+
+{noindex && <meta name="robots" content="noindex,nofollow" />}
+
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="TibiaPlan" />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonicalUrl} />
+<meta property="og:image" content={absoluteOgImage} />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={absoluteOgImage} />
