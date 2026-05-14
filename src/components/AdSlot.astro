@@ -1,17 +1,29 @@
 ---
 interface Props {
-  width: number;
+  /** Width in px for fixed-aspect-ratio mode. Ignored when `fullWidth` is true. */
+  width?: number;
+  /** Height in px. Always honored. */
   height: number;
   label?: string;
+  /**
+   * Stretch to the parent's full width with a fixed height (no aspect-ratio
+   * constraint). Use for top/horizontal banners. Defaults to false (sidebar
+   * mode with a fixed width × height box).
+   */
+  fullWidth?: boolean;
 }
 
-const { width, height, label } = Astro.props;
+const { width, height, label, fullWidth = false } = Astro.props;
+
+const sizeStyle = fullWidth
+  ? `width:100%;height:${height}px`
+  : `width:${width}px;max-width:100%;aspect-ratio:${width} / ${height}`;
 ---
 
 <a
   href="/advertise"
   class="group relative grid place-items-center overflow-hidden rounded-md border border-dashed border-border-subtle bg-bg-sunken px-4 text-center transition-colors hover:border-accent-violet/60 hover:bg-bg-surface"
-  style={`width:${width}px;max-width:100%;aspect-ratio:${width} / ${height}`}
+  style={sizeStyle}
 >
   {label ? (
     <span class="text-[10px] uppercase tracking-[0.1em] text-text-tertiary">{label}</span>

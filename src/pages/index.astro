@@ -3,6 +3,7 @@ import Layout from "../layouts/Layout.astro";
 import Header from "../components/Header.astro";
 import Sidebar from "../components/Sidebar.astro";
 import Footer from "../components/Footer.astro";
+import AdSlot from "../components/AdSlot.astro";
 import CharacterSheet from "../components/CharacterSheet.astro";
 import TrainingTab from "../components/tabs/TrainingTab.astro";
 import LootSplitTab from "../components/tabs/LootSplitTab.astro";
@@ -63,12 +64,7 @@ const structuredData = {
   <Header />
 
   <div class="mx-auto max-w-7xl px-4 pt-4">
-    <div
-      class="grid h-[90px] place-items-center rounded-md border border-dashed border-border-subtle bg-bg-sunken text-[10px] uppercase tracking-[0.15em] text-text-tertiary"
-      aria-hidden="true"
-    >
-      Banner ad
-    </div>
+    <AdSlot height={90} fullWidth />
   </div>
 
   <div x-data="tabsControl">
