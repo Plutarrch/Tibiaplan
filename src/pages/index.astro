@@ -8,12 +8,57 @@ import TrainingTab from "../components/tabs/TrainingTab.astro";
 import LootSplitTab from "../components/tabs/LootSplitTab.astro";
 import ImbuementsTab from "../components/tabs/ImbuementsTab.astro";
 import CharacterSearchTab from "../components/tabs/CharacterSearchTab.astro";
+
+// JSON-LD: a @graph with two entities sharing the same URL. WebSite tells
+// Google "this is the canonical site for TibiaPlan"; WebApplication tells
+// it "this is a free GameApplication" so the SERP can show the "Free" badge
+// and the feature list as sitelinks. Both are required because they answer
+// different questions (site identity vs. app classification).
+const SITE_URL = "https://tibiaplan.com";
+const SITE_DESCRIPTION =
+  "Free Tibia calculators and tools: training, imbuements, loot split, exercise weapons, and more. Fast, mobile-friendly, no ads.";
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      name: "TibiaPlan",
+      url: SITE_URL,
+      description: SITE_DESCRIPTION,
+      inLanguage: "en",
+    },
+    {
+      "@type": "WebApplication",
+      "@id": `${SITE_URL}/#webapp`,
+      name: "TibiaPlan",
+      url: SITE_URL,
+      description: SITE_DESCRIPTION,
+      applicationCategory: "GameApplication",
+      operatingSystem: "Any",
+      browserRequirements: "Requires JavaScript",
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "USD",
+      },
+      featureList: [
+        "Training Calculator",
+        "Loot Split",
+        "Imbuements Reference",
+        "Character Search",
+      ],
+    },
+  ],
+};
 ---
 
 <Layout
   title="TibiaPlan - Free Tibia Calculators, Loot Split & Imbuements"
   description="Free Tibia calculators and tools: training, imbuements, loot split, exercise weapons, and more. Fast, mobile-friendly, no ads."
   keywords={["tibia tools", "tibia calculator", "tibia fansite", "tibia training calculator", "tibia loot split", "tibia imbuements"]}
+  structuredData={structuredData}
 >
   <Header />
 

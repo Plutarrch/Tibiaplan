@@ -1,0 +1,21 @@
+---
+/**
+ * Renders a Schema.org JSON-LD block inside a <script type="application/ld+json">
+ * tag. Google + Bing use this to understand what kind of content a page contains
+ * (WebSite, WebApplication, Article, FAQ, Breadcrumb, etc.) which unlocks rich
+ * results in the SERP (star ratings, "Free" badges, sitelinks, etc.).
+ *
+ * Validate output at https://validator.schema.org/ after deploying.
+ */
+interface Props {
+  data: Record<string, unknown>;
+}
+
+const { data } = Astro.props;
+---
+
+<script
+  type="application/ld+json"
+  is:inline
+  set:html={JSON.stringify(data)}
+></script>
