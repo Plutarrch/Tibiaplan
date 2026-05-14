@@ -6,7 +6,32 @@ import RashidLocation from "./RashidLocation.astro";
 
 <header class="sticky top-0 z-10 border-b border-border-subtle bg-bg-surface/85 backdrop-blur">
   <!--
-    Row 1: brand + main nav. Compact, always visible (mobile + desktop).
+    Centerpiece shield: floats across both rows on desktop and protrudes
+    slightly past the bottom of Row 2 — the shield's pointed bottom is
+    literally the "V poking out of the second bar" the brand calls for.
+    Sized h-24 (96px) so it reads as the dominant brand element instead
+    of a corner icon. Mobile reuses the compact left-aligned logo+text
+    from before because Row 2 is hidden there, so there's no boundary
+    to straddle.
+  -->
+  <a
+    href="/"
+    aria-label="TibiaPlan home"
+    class="absolute left-1/2 top-[4.5rem] z-20 hidden -translate-x-1/2 -translate-y-1/2 transition-transform hover:scale-105 md:block"
+  >
+    <img
+      src="/TibiaPlanLogo.png"
+      alt="TibiaPlan"
+      width="96"
+      height="96"
+      class="h-24 w-24 drop-shadow-[0_4px_12px_rgba(0,0,0,0.5)]"
+      loading="eager"
+      decoding="async"
+    />
+  </a>
+
+  <!--
+    Row 1: left = brand text (and the small logo on mobile); right = nav.
   -->
   <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
     <a href="/" class="flex items-center gap-2 no-underline">
@@ -15,7 +40,7 @@ import RashidLocation from "./RashidLocation.astro";
         alt=""
         width="32"
         height="32"
-        class="h-8 w-8"
+        class="h-8 w-8 md:hidden"
         loading="eager"
         decoding="async"
       />
@@ -58,20 +83,12 @@ import RashidLocation from "./RashidLocation.astro";
   </div>
 
   <!--
-    Row 2: live status widgets (Creature / Boss / Rashid / Next change).
-    Desktop only (hidden under md). Has its own thin divider so the strip
-    reads as a separate "status bar" zone and never collides with the
-    brand row, regardless of how long the boosted-creature names get.
-    min-h keeps the row's height stable while the API resolves so the
-    page doesn't shift down once the widgets pop in.
+    Row 2: live status widgets. Creature/Boss anchor left, Rashid + Next
+    change anchor right via justify-between. Hidden on mobile.
   -->
-  <div
-    class="hidden border-t border-border-subtle/50 md:block"
-  >
+  <div class="hidden border-t border-border-subtle/50 md:block">
     <div class="mx-auto flex min-h-[3.25rem] max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-2">
-      <!-- Left group: today's boosted creature + boss (rotate together). -->
       <BoostedToday />
-      <!-- Right group: Rashid's city + countdown to the next rotation. -->
       <div class="flex items-center gap-4">
         <RashidLocation />
         <NextChange />
