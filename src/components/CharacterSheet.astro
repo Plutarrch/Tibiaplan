@@ -40,7 +40,7 @@ import { VOCATIONS } from "../data/skills";
     </span>
   </div>
 
-  <div class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-[auto_auto_minmax(0,1fr)]">
+  <div class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-[auto_minmax(0,1fr)]">
     <!-- LEFT: big sprite + Simulate Death button below -->
     <div class="flex flex-col items-stretch gap-3">
       <!--
@@ -84,45 +84,6 @@ import { VOCATIONS } from "../data/skills";
       >
         Revive
       </button>
-    </div>
-
-    <!--
-      MIDDLE: vertical skull selector. Uses sprite icons (PvE = no skull,
-      then white / red / black). Display order matches the in-game severity
-      progression. Active state = violet border + subtle glow; inactive =
-      grayscale + low opacity. Sprites live in public/sprites/skulls/.
-    -->
-    <div
-      class="flex flex-col gap-2 self-start"
-      role="radiogroup"
-      aria-label="PvP status"
-    >
-      <template x-for="opt in [
-        { value: 'none',  label: 'PvE — No Skull', sprite: '/sprites/skulls/pve.gif' },
-        { value: 'white', label: 'White Skull',    sprite: '/sprites/skulls/white.gif' },
-        { value: 'red',   label: 'Red Skull',      sprite: '/sprites/skulls/red.gif' },
-        { value: 'black', label: 'Black Skull',    sprite: '/sprites/skulls/black.gif' }
-      ]" :key="opt.value">
-        <button
-          type="button"
-          role="radio"
-          class="tooltip-host relative grid h-7 w-7 place-items-center rounded transition-all"
-          :class="skull === opt.value ? 'is-active' : 'border border-border-subtle bg-bg-sunken hover:border-border-emphasis'"
-          :aria-checked="skull === opt.value"
-          :title="opt.label"
-          @click="setSkull(opt.value)"
-        >
-          <img
-            :src="opt.sprite"
-            :alt="opt.label"
-            class="h-full w-full object-contain p-0.5"
-            loading="lazy"
-            decoding="async"
-            onerror="this.style.display='none'"
-          />
-          <span class="tooltip-text" x-text="opt.label"></span>
-        </button>
-      </template>
     </div>
 
     <!-- RIGHT: form fields -->
@@ -324,22 +285,6 @@ import { VOCATIONS } from "../data/skills";
             >
               ⚠ Backpack and equipped items may drop on death (under 5 blessings).
             </p>
-
-            <p
-              x-show="skull === 'red'"
-              x-cloak
-              class="mt-2 text-[10px] text-gold"
-            >
-              ⚠ Red Skull: every worn item drops on death even with AoL or all blessings. All regular blessings are lost. Twist of Fate stays.
-            </p>
-
-            <p
-              x-show="skull === 'black'"
-              x-cloak
-              class="mt-2 text-[10px] text-gold"
-            >
-              ⚠ Black Skull: every worn item drops on death (including AoL). All blessings are lost, including Twist of Fate. You revive with 40 HP and 0 mana.
-            </p>
           </div>
         </template>
       </div>
@@ -415,10 +360,7 @@ import { VOCATIONS } from "../data/skills";
 
       <p class="mt-3 text-[10px] leading-relaxed text-text-secondary">
         <span class="font-semibold text-danger" x-text="`Lost ${formatExp(lastDeath.expBefore - lastDeath.expAfter)} exp`"></span>
-        <template x-if="lastDeath.result.allItemsLost">
-          <span> · all worn items dropped (skull penalty)</span>
-        </template>
-        <template x-if="!lastDeath.result.allItemsLost && (lastDeath.result.containerDropChance > 0 || lastDeath.result.equipmentDropChance > 0)">
+        <template x-if="lastDeath.result.containerDropChance > 0 || lastDeath.result.equipmentDropChance > 0">
           <span>
             · backpack drop chance:
             <span class="text-gold" x-text="`${(lastDeath.result.containerDropChance * 100).toFixed(0)}%`"></span>

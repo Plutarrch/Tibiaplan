@@ -1,0 +1,170 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+
+// Direct DM link — opens the owner's Discord profile. If the visitor
+// shares a server with the owner they can DM immediately; otherwise
+// Discord offers a friend-request flow.
+const DISCORD_DM_URL = "https://discord.com/users/1214064198103998468";
+// Email obfuscation: encode to base64 at build time so the raw address
+// never appears in the HTML source. A tiny inline Alpine handler decodes
+// and opens mailto: on click. Stops casual scrapers that regex for @.
+const CONTACT_EMAIL = "aguirrecabralespatricio@gmail.com";
+const EMAIL_SUBJECT = "TibiaPlan advertising inquiry";
+const EMAIL_B64 = btoa(CONTACT_EMAIL);
+---
+
+<Layout
+  title="Advertise on TibiaPlan"
+  description="Reach the Latin American Tibia community. TibiaPlan offers a small sponsored slot in the sidebar — ideal for resellers, guilds, and Tibia-related services."
+>
+  <Header />
+
+  <main class="mx-auto max-w-3xl px-4 py-12">
+    <article class="rounded-md border border-border-subtle bg-bg-surface p-8 sm:p-12">
+      <header class="text-center">
+        <p class="text-[10px] uppercase tracking-[0.2em] text-accent-violet">
+          Sponsorship
+        </p>
+        <h1 class="mt-2 text-[24px] font-medium tracking-wide text-text-primary">
+          Advertise on TibiaPlan
+        </h1>
+        <p class="mx-auto mt-3 max-w-lg text-[13px] leading-relaxed text-text-secondary">
+          One small sponsored slot in the sidebar. No banner ads, no pop-ups,
+          no auto-play. Just a clean card next to tools real players use
+          every day.
+        </p>
+      </header>
+
+      <div class="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div class="rounded-md border border-border-subtle bg-bg-sunken p-5">
+          <p class="text-[10px] uppercase tracking-wider text-text-tertiary">
+            Who this is for
+          </p>
+          <ul class="mt-2 space-y-2 text-[12px] leading-relaxed text-text-secondary">
+            <li>· Tibia Coin resellers</li>
+            <li>· Power-leveling / quest services</li>
+            <li>· Guilds recruiting on specific servers</li>
+            <li>· Tibia-adjacent communities &amp; tools</li>
+          </ul>
+        </div>
+
+        <div class="rounded-md border border-border-subtle bg-bg-sunken p-5">
+          <p class="text-[10px] uppercase tracking-wider text-text-tertiary">
+            What you get
+          </p>
+          <ul class="mt-2 space-y-2 text-[12px] leading-relaxed text-text-secondary">
+            <li>· 300×200 sidebar card on every page</li>
+            <li>· Your logo, name, tagline, and call-to-action link</li>
+            <li>· Fast loading — no third-party trackers</li>
+            <li>· Friendly LATAM-heavy audience</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="mt-8 rounded-md border border-gold/30 bg-gold/5 p-5 text-center">
+        <p class="text-[11px] uppercase tracking-wider text-gold">
+          Be the first
+        </p>
+        <p class="mx-auto mt-2 max-w-md text-[13px] leading-relaxed text-text-secondary">
+          The slot is currently empty. The first sponsor gets a discounted
+          rate and a long-running placement while traffic grows. More
+          sponsored slots will open up as the site grows — sponsorships
+          are what keep TibiaPlan ad-network-free and let us keep
+          shipping new tools.
+        </p>
+      </div>
+
+      <div class="mt-8 flex flex-wrap items-center justify-center gap-3 border-t border-border-subtle pt-6">
+        <a
+          href="/"
+          class="rounded border border-border-subtle bg-bg-sunken px-4 py-2 text-[12px] text-text-secondary transition-colors hover:border-border-emphasis hover:text-text-primary"
+        >
+          ← Back to TibiaPlan
+        </a>
+        <button
+          type="button"
+          id="email-contact-btn"
+          data-e={EMAIL_B64}
+          data-s={EMAIL_SUBJECT}
+          class="flex items-center gap-1.5 rounded border border-accent-violet bg-accent-violet/10 px-4 py-2 text-[12px] font-medium text-accent-violet transition-colors hover:bg-accent-violet hover:text-bg-primary"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="h-3.5 w-3.5"
+            aria-hidden="true"
+          >
+            <rect x="2" y="4" width="20" height="16" rx="2" />
+            <path d="m22 7-10 5L2 7" />
+          </svg>
+          <span data-email-label>Email us</span>
+        </button>
+        <a
+          href={DISCORD_DM_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="flex items-center gap-1.5 rounded px-4 py-2 text-[12px] font-medium text-white transition-opacity hover:opacity-90"
+          style="background:#5865F2"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            class="h-3.5 w-3.5"
+            aria-hidden="true"
+          >
+            <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418Z" />
+          </svg>
+          Message me on Discord
+        </a>
+      </div>
+    </article>
+  </main>
+
+  <Footer />
+</Layout>
+
+<script>
+  // Wire up the obfuscated email button. Re-binds across Astro view
+  // transitions so it works after client-side navigation too.
+  function bindEmailButton() {
+    const btn = document.getElementById("email-contact-btn");
+    if (!btn || btn.dataset.bound === "true") return;
+    btn.dataset.bound = "true";
+
+    btn.addEventListener("click", async () => {
+      const email = atob(btn.dataset.e || "");
+      const subject = encodeURIComponent(btn.dataset.s || "");
+      const label = btn.querySelector("[data-email-label]");
+      const originalText = label?.textContent ?? "Email us";
+
+      // Try to copy to clipboard so the user can paste it manually if
+      // their browser has no default mail client.
+      try {
+        await navigator.clipboard.writeText(email);
+        if (label) label.textContent = "Email copied to clipboard";
+      } catch {
+        if (label) label.textContent = "Couldn't copy — try Discord";
+      }
+
+      // Also fire mailto: — opens the user's mail client if they have one.
+      window.location.href = "mailto:" + email + "?subject=" + subject;
+
+      // Revert the label after a few seconds so the email isn't pinned in
+      // the DOM permanently (still gives the user time to copy it).
+      setTimeout(() => {
+        if (label) label.textContent = originalText;
+      }, 5000);
+    });
+  }
+
+  bindEmailButton();
+  document.addEventListener("astro:page-load", bindEmailButton);
+</script>

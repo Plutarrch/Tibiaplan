@@ -28,4 +28,13 @@ Alpine.data("dromeTimer", dromeTimer);
 Alpine.data("nextChangeCountdown", nextChangeCountdown);
 
 window.Alpine = Alpine;
-Alpine.start();
+
+let alpineStarted = false;
+document.addEventListener("astro:page-load", () => {
+  if (!alpineStarted) {
+    Alpine.start();
+    alpineStarted = true;
+  } else {
+    Alpine.initTree(document.body);
+  }
+});

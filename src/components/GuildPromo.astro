@@ -1,0 +1,49 @@
+---
+/**
+ * Guild promo card — fixed 300×200 footprint (matches the AdSlot it
+ * replaced so the sidebar layout below stays put). The logo fills the
+ * card as a full background (object-cover crops top/bottom of the
+ * square logo to fit the 3:2 frame); name + tagline + CTA sit overlaid
+ * at the bottom with a dark gradient behind them for legibility.
+ */
+
+const GUILD_URL = "https://www.tibia.com/community/?subtopic=guilds&page=view";
+const GUILD_NAME = "Eternal Legacy";
+const GUILD_TAGLINE = "Free Services on Quidera Server!";
+---
+
+<article class="relative h-[200px] w-[300px] max-w-full overflow-hidden rounded-md border border-border-subtle bg-bg-surface">
+  <!-- Background logo — fills the entire card. -->
+  <img
+    src="/guild/logo.jpg"
+    alt={GUILD_NAME}
+    class="absolute inset-0 h-full w-full object-cover"
+    loading="lazy"
+    decoding="async"
+    onerror="this.style.display='none'"
+  />
+
+  <!-- Dark gradient overlay so text + button stay readable over any logo. -->
+  <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-black/20"></div>
+
+  <!-- Foreground content pinned to the bottom of the card. -->
+  <div class="absolute inset-0 flex flex-col justify-end p-3">
+    <h3 class="text-[14px] font-semibold tracking-wide text-white drop-shadow-md">
+      {GUILD_NAME}
+    </h3>
+    <p class="mt-0.5 text-[11px] leading-snug text-white/85 drop-shadow">
+      {GUILD_TAGLINE}
+    </p>
+
+    <a
+      href={GUILD_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="group relative mt-2 block w-full overflow-hidden rounded-md px-4 py-2 text-center text-[12px] font-semibold text-bg-primary shadow-md shadow-accent-violet/40 transition-all hover:shadow-lg hover:shadow-accent-violet/60 active:scale-95"
+      style="background: linear-gradient(135deg, #9B8AFB 0%, #5DCAE8 100%);"
+    >
+      <span class="relative z-10">⚔ Join Guild</span>
+      <span class="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 group-hover:translate-x-full"></span>
+    </a>
+  </div>
+</article>

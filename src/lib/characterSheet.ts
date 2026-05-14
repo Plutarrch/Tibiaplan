@@ -21,8 +21,6 @@ const STORAGE_KEY = "tibiaplanner.character";
 const RESET_EVENT = "app:reset";
 const UPDATED_EVENT = "character:updated";
 
-type Skull = "none" | "white" | "red" | "black";
-
 interface PersistedCharacter {
   name: string;
   vocation: string;
@@ -32,7 +30,6 @@ interface PersistedCharacter {
   skills: Record<string, number | null>;
   /** 8 booleans: [0..6] regular blessings, [7] Twist of Fate. */
   blessings: boolean[];
-  skull: Skull;
   showAllSkills: boolean;
   /**
    * Adventurer's Blessing is a free PvP-only protection while the character
@@ -58,7 +55,6 @@ function defaults(): PersistedCharacter {
     experience: null,
     skills: {},
     blessings: [true, true, true, true, true, true, true, true],
-    skull: "none",
     showAllSkills: false,
     adventurersLost: false,
     pctToNextBySkill: {},
@@ -159,7 +155,6 @@ export function characterSheet() {
         experience: this.experience,
         skills: { ...this.skills },
         blessings: [...this.blessings],
-        skull: this.skull,
         showAllSkills: this.showAllSkills,
         adventurersLost: this.adventurersLost,
         pctToNextBySkill: { ...this.pctToNextBySkill },
@@ -267,11 +262,6 @@ export function characterSheet() {
       if (this.vocation) {
         this.promotion = true;
       }
-      this.save();
-    },
-
-    setSkull(value: Skull) {
-      this.skull = value;
       this.save();
     },
 
@@ -454,11 +444,11 @@ export function characterSheet() {
       const beforeTof = this.hasTwistOfFate;
       const beforeLevel = lvl;
 
-      const deathType: DeathType =
-        this.skull === "none"  ? "pve" :
-        this.skull === "white" ? "pvp-white" :
-        this.skull === "red"   ? "pvp-red" :
-                                 "pvp-black";
+      // Skull selector was removed (most players know what red/black skull
+      // implies in-game; the UI focuses on PvE — the dominant case). The
+      // computeDeath function still accepts a deathType, so we just hardcode
+      // PvE here.
+      const deathType: DeathType = "pve";
 
       const result = computeDeath({
         level: lvl,

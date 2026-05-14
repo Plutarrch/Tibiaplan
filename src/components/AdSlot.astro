@@ -6,14 +6,23 @@ interface Props {
 }
 
 const { width, height, label } = Astro.props;
-const displayLabel = label ?? `${width}×${height}`;
 ---
 
-<div
-  class="grid place-items-center rounded-md border border-dashed border-border-subtle bg-bg-sunken text-[10px] uppercase tracking-[0.1em] text-text-tertiary"
+<a
+  href="/advertise"
+  class="group relative grid place-items-center overflow-hidden rounded-md border border-dashed border-border-subtle bg-bg-sunken px-4 text-center transition-colors hover:border-accent-violet/60 hover:bg-bg-surface"
   style={`width:${width}px;max-width:100%;aspect-ratio:${width} / ${height}`}
-  role="presentation"
-  aria-hidden="true"
 >
-  {displayLabel}
-</div>
+  {label ? (
+    <span class="text-[10px] uppercase tracking-[0.1em] text-text-tertiary">{label}</span>
+  ) : (
+    <span class="flex flex-col items-center gap-2">
+      <span class="text-[13px] font-medium text-text-secondary transition-colors group-hover:text-text-primary">
+        Be the first to advertise here
+      </span>
+      <span class="text-[10px] uppercase tracking-[0.15em] text-text-tertiary transition-colors group-hover:text-accent-violet">
+        Resellers · Guilds · Services →
+      </span>
+    </span>
+  )}
+</a>

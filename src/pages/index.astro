@@ -36,38 +36,76 @@ import CharacterSearchTab from "../components/tabs/CharacterSearchTab.astro";
           <CharacterSheet />
 
           <div class="mt-6">
+            <!--
+              Tab nav with an icon sprite to the left of each label. Sprite
+              size matches the header widgets (Rashid / Creature / Boss):
+              h-9 w-9 = 36px. onerror falls back to text-only so partial
+              sprite drops never break the tab UI.
+            -->
             <nav class="flex flex-wrap gap-2" aria-label="Tools">
               <button
                 type="button"
-                class="rounded px-4 py-2 text-[12px] transition-colors"
+                class="flex items-center gap-2 rounded px-3 py-2 text-[12px] transition-colors"
                 :class="active === 'training' ? 'is-active' : 'border border-border-subtle bg-bg-surface text-text-secondary hover:border-border-emphasis hover:text-text-primary'"
                 @click="setActive('training')"
               >
-                Training
+                <img
+                  src="/sprites/tabs/training.gif"
+                  alt=""
+                  class="h-9 w-9 object-contain"
+                  loading="lazy"
+                  decoding="async"
+                  onerror="this.style.display='none'"
+                />
+                <span>Training</span>
               </button>
               <button
                 type="button"
-                class="rounded px-4 py-2 text-[12px] transition-colors"
+                class="flex items-center gap-2 rounded px-3 py-2 text-[12px] transition-colors"
                 :class="active === 'loot' ? 'is-active' : 'border border-border-subtle bg-bg-surface text-text-secondary hover:border-border-emphasis hover:text-text-primary'"
                 @click="setActive('loot')"
               >
-                Loot Split
+                <img
+                  src="/sprites/tabs/loot.webp"
+                  alt=""
+                  class="h-9 w-9 object-contain"
+                  loading="lazy"
+                  decoding="async"
+                  onerror="this.style.display='none'"
+                />
+                <span>Loot Split</span>
               </button>
               <button
                 type="button"
-                class="rounded px-4 py-2 text-[12px] transition-colors"
+                class="flex items-center gap-2 rounded px-3 py-2 text-[12px] transition-colors"
                 :class="active === 'imbuements' ? 'is-active' : 'border border-border-subtle bg-bg-surface text-text-secondary hover:border-border-emphasis hover:text-text-primary'"
                 @click="setActive('imbuements')"
               >
-                Imbuements
+                <img
+                  src="/sprites/tabs/imbuement.gif"
+                  alt=""
+                  class="h-9 w-9 object-contain"
+                  loading="lazy"
+                  decoding="async"
+                  onerror="this.style.display='none'"
+                />
+                <span>Imbuements</span>
               </button>
               <button
                 type="button"
-                class="rounded px-4 py-2 text-[12px] transition-colors"
+                class="flex items-center gap-2 rounded px-3 py-2 text-[12px] transition-colors"
                 :class="active === 'character-search' ? 'is-active' : 'border border-border-subtle bg-bg-surface text-text-secondary hover:border-border-emphasis hover:text-text-primary'"
                 @click="setActive('character-search')"
               >
-                Character Search
+                <img
+                  src="/sprites/tabs/character-search.gif"
+                  alt=""
+                  class="h-9 w-9 object-contain"
+                  loading="lazy"
+                  decoding="async"
+                  onerror="this.style.display='none'"
+                />
+                <span>Character Search</span>
               </button>
             </nav>
 
