@@ -26,6 +26,17 @@ function defaults(): PersistedLoot {
   return { rawLog: "", history: [], historyOpen: true };
 }
 
+// Singleton reset bus (see characterSheet.ts for the full rationale).
+let activeInstance: ReturnType<typeof lootTab> | null = null;
+let busInstalled = false;
+function installBus() {
+  if (busInstalled || typeof window === "undefined") return;
+  busInstalled = true;
+  window.addEventListener(RESET_EVENT, () => {
+    activeInstance?.reset();
+  });
+}
+
 export function lootTab() {
   return {
     rawLog: "" as string,
@@ -42,8 +53,9 @@ export function lootTab() {
     currentRawLog: "" as string,
 
     init() {
+      installBus();
+      activeInstance = this;
       this.load();
-      window.addEventListener(RESET_EVENT, () => this.reset());
     },
 
     load() {

@@ -16,6 +16,23 @@ const CHARACTER_KEY = "tibiaplanner.character";
 const RESET_EVENT = "app:reset";
 const CHARACTER_EVENT = "character:updated";
 
+// Singleton bus (see characterSheet.ts for the full rationale). Without
+// this, every ClientRouter page swap re-registers window listeners on
+// top of the old ones, and the cascading work eventually freezes the
+// page when the user types fast enough in the calculator.
+let activeInstance: ReturnType<typeof trainingTab> | null = null;
+let busInstalled = false;
+function installBus() {
+  if (busInstalled || typeof window === "undefined") return;
+  busInstalled = true;
+  window.addEventListener(RESET_EVENT, () => {
+    activeInstance?.reset();
+  });
+  window.addEventListener(CHARACTER_EVENT, (e: Event) => {
+    activeInstance?._onCharacterUpdated((e as CustomEvent).detail);
+  });
+}
+
 export const LOYALTY_OPTIONS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50] as const;
 
 /** Fixed TC ↔ gp rate used to display the gp equivalent of weapon cost. */
@@ -107,6 +124,9 @@ export function trainingTab() {
     LOYALTY_OPTIONS,
 
     init() {
+      installBus();
+      activeInstance = this;
+
       const ch = readCharacter();
       this.vocation = ch.vocation ?? "";
       this.load();
@@ -134,44 +154,45 @@ export function trainingTab() {
         .$watch("skill", (value) => {
           if (!value) this.clearSkillDependents();
         });
+    },
 
-      window.addEventListener(RESET_EVENT, () => this.reset());
+    /**
+     * Handle a `character:updated` event from the singleton bus. Mirrors
+     * vocation / skill / "% to next" changes from the Character Sheet
+     * (or Character Search "Use as profile") without dispatching anything
+     * back — the equality guards short-circuit no-op writes so the same
+     * value doesn't ping-pong.
+     */
+    _onCharacterUpdated(detail: CharacterSnapshot | null | undefined) {
+      if (!detail) return;
 
-      window.addEventListener(CHARACTER_EVENT, ((e: Event) => {
-        const detail = (e as CustomEvent<CharacterSnapshot>).detail;
-        if (!detail) return;
-
-        // Vocation propagation
-        const newVocation = detail.vocation ?? "";
-        if (newVocation !== this.vocation) {
-          this.vocation = newVocation;
-          if (this.skill && !this.availableSkills.find((s) => s.skill === this.skill)) {
-            this.skill = "";
-            this.currentSkill = null;
-            this.pctToNext = null;
-            this.showResults = false;
-            this.save();
-          }
+      const newVocation = detail.vocation ?? "";
+      if (newVocation !== this.vocation) {
+        this.vocation = newVocation;
+        if (this.skill && !this.availableSkills.find((s) => s.skill === this.skill)) {
+          this.skill = "";
+          this.currentSkill = null;
+          this.pctToNext = null;
+          this.showResults = false;
+          this.save();
         }
+      }
 
-        // Skill value propagation (CharacterSheet → Training)
-        if (this.skill && detail.skills) {
-          const incoming = detail.skills[this.skill];
-          if (incoming != null && incoming !== this.currentSkill) {
-            this.currentSkill = incoming as number;
-            this.save();
-          }
+      if (this.skill && detail.skills) {
+        const incoming = detail.skills[this.skill];
+        if (incoming != null && incoming !== this.currentSkill) {
+          this.currentSkill = incoming as number;
+          this.save();
         }
+      }
 
-        // "% to next" propagation (CharacterSheet → Training)
-        if (this.skill && detail.pctToNextBySkill) {
-          const incomingPct = detail.pctToNextBySkill[this.skill];
-          if (incomingPct != null && incomingPct !== this.pctToNext) {
-            this.pctToNext = incomingPct as number;
-            this.save();
-          }
+      if (this.skill && detail.pctToNextBySkill) {
+        const incomingPct = detail.pctToNextBySkill[this.skill];
+        if (incomingPct != null && incomingPct !== this.pctToNext) {
+          this.pctToNext = incomingPct as number;
+          this.save();
         }
-      }) as EventListener);
+      }
     },
 
     load() {

@@ -5,11 +5,27 @@ export type Tab = "training" | "loot" | "imbuements" | "character-search";
 
 const VALID_TABS: readonly Tab[] = ["training", "loot", "imbuements", "character-search"];
 
+// Singleton reset bus (see characterSheet.ts for the full rationale).
+let activeInstance: ReturnType<typeof tabsControl> | null = null;
+let busInstalled = false;
+function installBus() {
+  if (busInstalled || typeof window === "undefined") return;
+  busInstalled = true;
+  window.addEventListener(RESET_EVENT, () => {
+    if (!activeInstance) return;
+    activeInstance.active = "training";
+    activeInstance.save();
+  });
+}
+
 export function tabsControl() {
   return {
     active: "training" as Tab,
 
     init() {
+      installBus();
+      activeInstance = this;
+
       // Hash takes precedence so deep-links like /#imbuements work.
       const fromHash = window.location.hash.replace(/^#/, "") as Tab;
       if (VALID_TABS.includes(fromHash)) {
@@ -22,11 +38,6 @@ export function tabsControl() {
           // ignore
         }
       }
-
-      window.addEventListener(RESET_EVENT, () => {
-        this.active = "training";
-        this.save();
-      });
     },
 
     setActive(tab: Tab) {

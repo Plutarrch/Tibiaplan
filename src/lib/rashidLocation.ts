@@ -36,22 +36,24 @@ function tibiaWeekday(now: Date = new Date()): number {
   return hour < 10 ? (dow + 6) % 7 : dow;
 }
 
+// Singleton timer (see boostedToday.ts for the rationale).
+let activeInstance: ReturnType<typeof rashidLocation> | null = null;
+let timerInstalled = false;
+function installTimer() {
+  if (timerInstalled || typeof window === "undefined") return;
+  timerInstalled = true;
+  window.setInterval(() => activeInstance?.refresh(), 60_000);
+}
+
 export function rashidLocation() {
   return {
     city: "" as string,
     wikiUrl: "" as string,
-    _timer: 0 as number,
 
     init(this: ReturnType<typeof rashidLocation>) {
+      installTimer();
+      activeInstance = this;
       this.refresh();
-      // Re-check once per minute — the rotation only flips once a day at
-      // 10:00 Berlin, but checking every minute keeps the UI honest right
-      // around the boundary without paying any meaningful cost.
-      this._timer = window.setInterval(() => this.refresh(), 60_000);
-    },
-
-    destroy(this: ReturnType<typeof rashidLocation>) {
-      if (this._timer) clearInterval(this._timer);
     },
 
     refresh(this: ReturnType<typeof rashidLocation>) {

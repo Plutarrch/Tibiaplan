@@ -21,6 +21,25 @@ const STORAGE_KEY = "tibiaplanner.character";
 const RESET_EVENT = "app:reset";
 const UPDATED_EVENT = "character:updated";
 
+// Singleton bus: window listeners are registered ONCE per module evaluation
+// and always dispatch to the most recent live instance. Without this,
+// Astro's ClientRouter (which swaps document.body on every cross-page nav)
+// causes new Alpine instances to register new listeners on top of the old
+// ones, doubling the work each round trip until the page eventually
+// freezes. activeInstance is null between unmounts and remounts.
+let activeInstance: ReturnType<typeof characterSheet> | null = null;
+let busInstalled = false;
+function installBus() {
+  if (busInstalled || typeof window === "undefined") return;
+  busInstalled = true;
+  window.addEventListener(RESET_EVENT, () => {
+    activeInstance?.reset();
+  });
+  window.addEventListener(UPDATED_EVENT, (e: Event) => {
+    activeInstance?._onCharacterUpdated((e as CustomEvent).detail);
+  });
+}
+
 interface PersistedCharacter {
   name: string;
   vocation: string;
@@ -85,49 +104,50 @@ export function characterSheet() {
     BLESSING_DISPLAY_ORDER,
 
     init() {
+      installBus();
+      activeInstance = this;
       this.load();
-      // The Header dispatches this on Reset.
-      window.addEventListener(RESET_EVENT, () => this.reset());
+    },
 
-      // Listen for external writes (e.g. the Training tab updating a skill
-      // value or "% to next", or the Character Search tab pushing a full
-      // character into the profile). Mirror the change into in-memory state
-      // without re-saving (the writer already persisted), so we avoid loops.
-      window.addEventListener(UPDATED_EVENT, ((e: Event) => {
-        const detail = (e as CustomEvent).detail;
-        if (!detail || typeof detail !== "object") return;
+    /**
+     * Handle a `character:updated` event coming through the singleton bus.
+     * Mirrors external writes (Training tab, Character Search "Use as
+     * profile") into in-memory state WITHOUT re-saving — the writer already
+     * persisted, so saving again would just bounce the event back.
+     */
+    _onCharacterUpdated(detail: unknown) {
+      if (!detail || typeof detail !== "object") return;
+      const d = detail as Record<string, unknown>;
 
-        // Top-level character fields (Character Search → "Use as profile").
-        if (typeof detail.name === "string") this.name = detail.name;
-        if (typeof detail.vocation === "string") this.vocation = detail.vocation;
-        if (typeof detail.promotion === "boolean") this.promotion = detail.promotion;
-        if (detail.level !== undefined) this.level = detail.level;
-        if (detail.experience !== undefined) this.experience = detail.experience;
+      if (typeof d.name === "string") this.name = d.name;
+      if (typeof d.vocation === "string") this.vocation = d.vocation;
+      if (typeof d.promotion === "boolean") this.promotion = d.promotion;
+      if (d.level !== undefined) this.level = d.level as number | null;
+      if (d.experience !== undefined) this.experience = d.experience as number | null;
 
-        if (detail.skills) {
-          let changed = false;
-          const next = { ...this.skills };
-          for (const [k, v] of Object.entries(detail.skills)) {
-            if (next[k] !== v) {
-              next[k] = v as number | null;
-              changed = true;
-            }
+      if (d.skills && typeof d.skills === "object") {
+        let changed = false;
+        const next = { ...this.skills };
+        for (const [k, v] of Object.entries(d.skills as Record<string, unknown>)) {
+          if (next[k] !== v) {
+            next[k] = v as number | null;
+            changed = true;
           }
-          if (changed) this.skills = next;
         }
+        if (changed) this.skills = next;
+      }
 
-        if (detail.pctToNextBySkill) {
-          let changed = false;
-          const next = { ...this.pctToNextBySkill };
-          for (const [k, v] of Object.entries(detail.pctToNextBySkill)) {
-            if (next[k] !== v) {
-              next[k] = v as number | null;
-              changed = true;
-            }
+      if (d.pctToNextBySkill && typeof d.pctToNextBySkill === "object") {
+        let changed = false;
+        const next = { ...this.pctToNextBySkill };
+        for (const [k, v] of Object.entries(d.pctToNextBySkill as Record<string, unknown>)) {
+          if (next[k] !== v) {
+            next[k] = v as number | null;
+            changed = true;
           }
-          if (changed) this.pctToNextBySkill = next;
         }
-      }) as EventListener);
+        if (changed) this.pctToNextBySkill = next;
+      }
     },
 
     load() {

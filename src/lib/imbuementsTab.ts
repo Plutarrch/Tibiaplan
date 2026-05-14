@@ -19,6 +19,17 @@ function defaults(): PersistedImbuements {
   return { selectedTier: {} };
 }
 
+// Singleton reset bus (see characterSheet.ts for the full rationale).
+let activeInstance: ReturnType<typeof imbuementsTab> | null = null;
+let busInstalled = false;
+function installBus() {
+  if (busInstalled || typeof window === "undefined") return;
+  busInstalled = true;
+  window.addEventListener(RESET_EVENT, () => {
+    activeInstance?.reset();
+  });
+}
+
 export function imbuementsTab() {
   return {
     // Static data exposed to templates.
@@ -31,8 +42,9 @@ export function imbuementsTab() {
     selectedTier: {} as Record<string, Tier>,
 
     init() {
+      installBus();
+      activeInstance = this;
       this.load();
-      window.addEventListener(RESET_EVENT, () => this.reset());
     },
 
     load() {

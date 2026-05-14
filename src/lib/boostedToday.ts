@@ -84,24 +84,30 @@ function timeUntilServerSave(): { hours: number; minutes: number } | null {
   }
 }
 
+// Singleton timer: only one setInterval runs across the whole page life,
+// pointing at whichever instance is currently mounted. Without this,
+// every ClientRouter swap leaks an orphaned interval that keeps the old
+// instance and its closures alive forever.
+let activeInstance: ReturnType<typeof boostedToday> | null = null;
+let timerInstalled = false;
+function installTimer() {
+  if (timerInstalled || typeof window === "undefined") return;
+  timerInstalled = true;
+  window.setInterval(() => activeInstance?.refreshCountdown(), 60_000);
+}
+
 export function boostedToday() {
   return {
     creature: emptyEntry() as DisplayEntry,
     boss: emptyEntry() as DisplayEntry,
     countdown: "" as string,
     ready: false as boolean,
-    _timer: 0 as number,
 
     init(this: ReturnType<typeof boostedToday>) {
+      installTimer();
+      activeInstance = this;
       this.refreshCountdown();
       this.load();
-      // Update the countdown once per minute. When it ticks past 0 the
-      // load() inside refreshCountdown re-fetches the API.
-      this._timer = window.setInterval(() => this.refreshCountdown(), 60_000);
-    },
-
-    destroy(this: ReturnType<typeof boostedToday>) {
-      if (this._timer) clearInterval(this._timer);
     },
 
     async load(this: ReturnType<typeof boostedToday>) {

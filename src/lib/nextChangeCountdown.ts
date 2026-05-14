@@ -27,18 +27,23 @@ function timeUntilServerSave(): { hours: number; minutes: number } | null {
   }
 }
 
+// Singleton timer (see boostedToday.ts for the rationale).
+let activeInstance: ReturnType<typeof nextChangeCountdown> | null = null;
+let timerInstalled = false;
+function installTimer() {
+  if (timerInstalled || typeof window === "undefined") return;
+  timerInstalled = true;
+  window.setInterval(() => activeInstance?.refresh(), 60_000);
+}
+
 export function nextChangeCountdown() {
   return {
     countdown: "" as string,
-    _timer: 0 as number,
 
     init(this: ReturnType<typeof nextChangeCountdown>) {
+      installTimer();
+      activeInstance = this;
       this.refresh();
-      this._timer = window.setInterval(() => this.refresh(), 60_000);
-    },
-
-    destroy(this: ReturnType<typeof nextChangeCountdown>) {
-      if (this._timer) clearInterval(this._timer);
     },
 
     refresh(this: ReturnType<typeof nextChangeCountdown>) {

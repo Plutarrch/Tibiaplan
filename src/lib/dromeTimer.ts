@@ -47,21 +47,24 @@ function formatCountdown(ms: number): Countdown {
   };
 }
 
+// Singleton timer (see boostedToday.ts for the rationale).
+let activeInstance: ReturnType<typeof dromeTimer> | null = null;
+let timerInstalled = false;
+function installTimer() {
+  if (timerInstalled || typeof window === "undefined") return;
+  timerInstalled = true;
+  window.setInterval(() => activeInstance?.refresh(), 60_000);
+}
+
 export function dromeTimer() {
   return {
     nextReset: "" as string,
     countdown: "" as string,
-    _timer: 0 as number,
 
     init(this: ReturnType<typeof dromeTimer>) {
+      installTimer();
+      activeInstance = this;
       this.refresh();
-      // Tick every minute — sub-minute precision in the UI would just churn
-      // DOM with no real value.
-      this._timer = window.setInterval(() => this.refresh(), 60_000);
-    },
-
-    destroy(this: ReturnType<typeof dromeTimer>) {
-      if (this._timer) clearInterval(this._timer);
     },
 
     refresh(this: ReturnType<typeof dromeTimer>) {
