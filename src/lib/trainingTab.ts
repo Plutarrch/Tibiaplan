@@ -248,6 +248,11 @@ export function trainingTab() {
 
     /** Per-field validation. Empty object = all valid. */
     get fieldErrors(): Record<string, string> {
+      // Tibia's de-facto skill ceiling. Beyond this the exponential formulas
+      // overflow JavaScript's Number range and cause infinite loops in the
+      // weapon-mix solver, so we hard-cap user input here.
+      const SKILL_CAP = 200;
+
       const errs: Record<string, string> = {};
       if (!this.skill) errs.skill = "Pick a skill";
       const cur = this.currentSkill;
@@ -255,6 +260,8 @@ export function trainingTab() {
       const pct = this.pctToNext;
       if (cur == null || !Number.isFinite(cur) || cur < 0) {
         errs.currentSkill = "Enter your current skill";
+      } else if (cur > SKILL_CAP) {
+        errs.currentSkill = `Max ${SKILL_CAP}`;
       }
       if (pct == null || !Number.isFinite(pct)) {
         errs.pctToNext = "Enter % to next (0–100)";
@@ -263,6 +270,8 @@ export function trainingTab() {
       }
       if (tgt == null || !Number.isFinite(tgt) || tgt <= 0) {
         errs.targetSkill = "Enter target skill";
+      } else if (tgt > SKILL_CAP) {
+        errs.targetSkill = `Max ${SKILL_CAP}`;
       } else if (cur != null && tgt <= cur) {
         errs.targetSkill = "Must be higher than current";
       }

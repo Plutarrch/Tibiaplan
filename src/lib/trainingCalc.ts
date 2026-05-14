@@ -131,6 +131,21 @@ export function computeSingleWeaponResult(
   mods: Modifiers,
   tcMarketPriceGp: number,
 ): WeaponResult {
+  // Same defensive cap as computeSmartMix — refuse to compute if inputs
+  // would overflow into Infinity / NaN, which can pin the page (millions
+  // of weapons "needed" would also blow up the formatter downstream).
+  if (!Number.isFinite(pointsRequired) || pointsRequired <= 0) {
+    return {
+      weapons: 0,
+      totalPointsGained: 0,
+      endLevel: currentSkill,
+      endPct: pctToNext,
+      costTC: 0,
+      costGP: 0,
+      hours: 0,
+      overshoot: 0,
+    };
+  }
   const stats = EXERCISE_WEAPONS[weaponType];
   const effPoints = effectiveWeaponPoints(stats.points, mods);
   const weapons =
@@ -189,7 +204,17 @@ export function computeSmartMix(
   mods: Modifiers,
   tcMarketPriceGp: number,
 ): SmartMixResult {
-  if (pointsRequired <= 0) {
+  // Defensive cap: if pointsRequired is Infinity (overflow when totalAtSkill
+  // gets called with an absurd target) or NaN, the L/D enumeration below
+  // would iterate forever and freeze the main thread. Bail out cleanly.
+  // Also cap at a sane upper bound — even a max-level Tibia character
+  // training to ML 200 needs <10^12 points.
+  const MAX_REASONABLE_POINTS = 1e14;
+  if (
+    !Number.isFinite(pointsRequired) ||
+    pointsRequired > MAX_REASONABLE_POINTS ||
+    pointsRequired <= 0
+  ) {
     return {
       regular: 0,
       durable: 0,
@@ -214,9 +239,19 @@ export function computeSmartMix(
   let bestTotal = bestR * regPts;
   let bestWeapons = bestR;
 
-  const maxL = Math.floor(pointsRequired / lstPts) + 1;
+  // Hard iteration cap — the inner loops should never need this many steps
+  // for any realistic input, but it's a safety net against a future code
+  // change accidentally letting an out-of-range value through validation.
+  const MAX_ITERS = 100_000;
+  let iters = 0;
+
+  const maxL = Math.min(
+    MAX_ITERS,
+    Math.floor(pointsRequired / lstPts) + 1,
+  );
 
   for (let L = 0; L <= maxL; L++) {
+    if (++iters > MAX_ITERS) break;
     const afterL = pointsRequired - L * lstPts;
 
     if (afterL <= 0) {
@@ -230,8 +265,12 @@ export function computeSmartMix(
       continue;
     }
 
-    const maxD = Math.floor(afterL / durPts) + 1;
+    const maxD = Math.min(
+      MAX_ITERS,
+      Math.floor(afterL / durPts) + 1,
+    );
     for (let D = 0; D <= maxD; D++) {
+      if (++iters > MAX_ITERS) break;
       const afterLD = afterL - D * durPts;
       const R = afterLD > 0 ? Math.ceil(afterLD / regPts) : 0;
       const total = L * lstPts + D * durPts + R * regPts;
