@@ -16,6 +16,32 @@
   </div>
 
   <div class="mt-6 space-y-5">
+    <!--
+      Heads-up about the calculator's limit: it splits whatever numbers
+      Tibia's in-game analyzer produced; it can't verify those numbers.
+      Loot Type (Market / NPC / Leader) lives in the in-game settings and
+      can drastically change the totals — and yes, a dishonest leader can
+      under-price items they pick up themselves. Quick callout so parties
+      know to discuss pricing BEFORE the hunt.
+    -->
+    <div class="rounded-md border border-gold/30 bg-gold/5 px-4 py-3">
+      <p class="flex items-start gap-2 text-[11px] leading-relaxed text-gold">
+        <span aria-hidden="true" class="font-bold">⚠</span>
+        <span>
+          <span class="font-semibold">Prices come from your in-game Loot Type setting</span>
+          (Market / NPC / Leader). Market prices can be manipulated, NPC
+          mode under-values rares, and "Leader" mode lets one player set
+          custom prices that everyone trusts. There is no 100% objective
+          split — confirm with the party leader which mode they're using
+          and what the rares are worth
+          <span class="font-semibold">before the hunt</span>.
+          <a href="/guides/tibia-loot-split#prices" class="underline hover:text-text-primary">
+            Read the full breakdown →
+          </a>
+        </span>
+      </p>
+    </div>
+
     <!-- Textarea + actions -->
     <div>
       <label class="block">

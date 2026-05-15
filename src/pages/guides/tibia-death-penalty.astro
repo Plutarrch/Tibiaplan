@@ -1,0 +1,951 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import Header from "../../components/Header.astro";
+import Footer from "../../components/Footer.astro";
+
+const PUBLISHED = "2026-05-15";
+const MODIFIED = "2026-05-15";
+const URL = "https://tibiaplan.com/guides/tibia-death-penalty";
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  headline: "Tibia Death Penalty Guide: Exact EXP Loss in 2026",
+  description:
+    "Exact math behind dying in Tibia: MeL formula, promotion -30%, blessings -8% each, skulls, Twist of Fate, item drop chances, unfair-fight reduction.",
+  datePublished: PUBLISHED,
+  dateModified: MODIFIED,
+  author: { "@type": "Organization", name: "TibiaPlan" },
+  publisher: {
+    "@type": "Organization",
+    name: "TibiaPlan",
+    url: "https://tibiaplan.com",
+  },
+  mainEntityOfPage: { "@type": "WebPage", "@id": URL },
+  url: URL,
+};
+---
+
+<Layout
+  title="Tibia Death Penalty Guide: Exact EXP Loss in 2026 - TibiaPlan"
+  description="Exact math behind dying in Tibia: MeL formula, promotion -30%, blessings -8% each, skulls, Twist of Fate, item drop chances, unfair-fight reduction."
+  keywords={[
+    "tibia death penalty",
+    "tibia exp loss",
+    "tibia death formula",
+    "tibia blessing reduction",
+    "tibia twist of fate",
+    "tibia skull system",
+  ]}
+  structuredData={structuredData}
+>
+  <Header />
+
+  <!--
+    Wider layout to match the home page (max-w-7xl). On desktop we split
+    the article into 2 columns: main content on the left, a sticky sidebar
+    with the TOC + Death Simulator CTA on the right. On mobile/tablet the
+    sidebar collapses below the article and the TOC stays at the top.
+  -->
+  <main class="mx-auto max-w-7xl px-4 py-10">
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
+      <article class="rounded-md border border-border-subtle bg-bg-surface p-6 sm:p-10">
+        <!-- Header -->
+        <header>
+          <p class="text-[10px] uppercase tracking-[0.2em] text-accent-violet">
+            Guide · Death &amp; Penalties
+          </p>
+          <h1 class="mt-2 text-[26px] font-medium leading-tight tracking-wide text-text-primary sm:text-[30px]">
+            Tibia Death Penalty Guide: Exact EXP Loss in 2026
+          </h1>
+          <p class="mt-3 text-[10px] uppercase tracking-wider text-text-tertiary">
+            9 min read · Updated May 2026
+          </p>
+          <p class="mt-4 text-[13px] leading-relaxed text-text-secondary">
+            Dying in Tibia is expensive. How expensive depends on six things:
+            your level, whether you're promoted, how many blessings you bought,
+            whether you have Twist of Fate, who killed you (PvE or PvP), and
+            what skull state your character had earned. This guide walks through
+            the exact formulas and shows you what each variable saves you —
+            with the
+            <a href="/" class="text-accent-violet hover:underline">Death Simulator</a>
+            on the home page ready to plug your numbers in.
+          </p>
+        </header>
+
+        <!-- Mobile-only TOC (sidebar carries the desktop version) -->
+        <nav class="mt-8 rounded-md border border-border-subtle bg-bg-sunken p-4 lg:hidden">
+          <p class="text-[10px] uppercase tracking-wider text-text-tertiary">
+            On this page
+          </p>
+          <ul class="mt-2 space-y-1 text-[12px] text-text-secondary">
+            <li><a href="#overview" class="hover:text-accent-violet">Meet the blessings</a></li>
+            <li><a href="#formula" class="hover:text-accent-violet">1. The base formula (MeL)</a></li>
+            <li><a href="#reductions" class="hover:text-accent-violet">2. Reductions: promotion and blessings</a></li>
+            <li><a href="#adv-bless" class="hover:text-accent-violet">3. Adventurer's Blessing (level 1–20)</a></li>
+            <li><a href="#tof" class="hover:text-accent-violet">4. Twist of Fate</a></li>
+            <li><a href="#pve" class="hover:text-accent-violet">5. PvE death</a></li>
+            <li><a href="#pvp-white" class="hover:text-accent-violet">6. PvP — White Skull</a></li>
+            <li><a href="#pvp-red" class="hover:text-accent-violet">7. PvP — Red Skull</a></li>
+            <li><a href="#pvp-black" class="hover:text-accent-violet">8. PvP — Black Skull</a></li>
+            <li><a href="#unfair" class="hover:text-accent-violet">9. Unfair Fight Reduction</a></li>
+            <li><a href="#skills" class="hover:text-accent-violet">10. Skill loss and spent mana loss</a></li>
+            <li><a href="#items" class="hover:text-accent-violet">11. Item drop chances</a></li>
+            <li><a href="#recovery" class="hover:text-accent-violet">12. Recovery &amp; pricing</a></li>
+          </ul>
+        </nav>
+
+        <!-- === OVERVIEW: meet the blessings === -->
+        <section id="overview" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            Meet the blessings
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Before we dive into formulas, here's the cast: Tibia has
+            <span class="font-semibold text-text-primary">seven Regular Blessings</span>
+            (each reduces death EXP loss by 8%, additive) plus
+            <span class="font-semibold text-text-primary">Twist of Fate</span>
+            in an 8th slot (doesn't reduce loss but absorbs blessing/AoL
+            consumption on PvP deaths). At level 1–20 every character also
+            has the free
+            <span class="font-semibold text-text-primary">Adventurer's Blessing</span>
+            for PvP protection.
+          </p>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            The seven regulars split into two groups: five "non-mountain"
+            blessings (buyable as a package after
+            <a href="https://tibia.fandom.com/wiki/The_Inquisition_Quest" target="_blank" rel="noopener noreferrer" class="text-accent-violet hover:underline">The Inquisition Quest</a>)
+            and two mountain blessings (always individual trips).
+          </p>
+
+          <div class="mt-4 overflow-x-auto">
+            <table class="w-full border-collapse text-[12px]">
+              <thead class="border-b border-border-subtle text-text-tertiary">
+                <tr>
+                  <th class="px-3 py-2 text-left font-medium">#</th>
+                  <th class="px-3 py-2 text-left font-medium">Blessing</th>
+                  <th class="px-3 py-2 text-left font-medium">Type</th>
+                  <th class="px-3 py-2 text-left font-medium">Where to buy</th>
+                </tr>
+              </thead>
+              <tbody class="text-text-secondary">
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 text-text-tertiary">1</td>
+                  <td class="px-3 py-2">
+                    <a href="https://tibia.fandom.com/wiki/Wisdom_of_Solitude" target="_blank" rel="noopener noreferrer" class="text-accent-violet hover:underline">Wisdom of Solitude</a>
+                  </td>
+                  <td class="px-3 py-2">Regular · Inquisition</td>
+                  <td class="px-3 py-2">Eremo on Cormaya (boat from Edron)</td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 text-text-tertiary">2</td>
+                  <td class="px-3 py-2">
+                    <a href="https://tibia.fandom.com/wiki/Spark_of_the_Phoenix" target="_blank" rel="noopener noreferrer" class="text-accent-violet hover:underline">Spark of the Phoenix</a>
+                  </td>
+                  <td class="px-3 py-2">Regular · Inquisition</td>
+                  <td class="px-3 py-2">Kazordoon</td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 text-text-tertiary">3</td>
+                  <td class="px-3 py-2">
+                    <a href="https://tibia.fandom.com/wiki/Fire_of_the_Suns" target="_blank" rel="noopener noreferrer" class="text-accent-violet hover:underline">Fire of the Suns</a>
+                  </td>
+                  <td class="px-3 py-2">Regular · Inquisition</td>
+                  <td class="px-3 py-2">Ab'Dendriel</td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 text-text-tertiary">4</td>
+                  <td class="px-3 py-2">
+                    <a href="https://tibia.fandom.com/wiki/Spiritual_Shielding" target="_blank" rel="noopener noreferrer" class="text-accent-violet hover:underline">Spiritual Shielding</a>
+                  </td>
+                  <td class="px-3 py-2">Regular · Inquisition</td>
+                  <td class="px-3 py-2">South exit of Thais</td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 text-text-tertiary">5</td>
+                  <td class="px-3 py-2">
+                    <a href="https://tibia.fandom.com/wiki/Embrace_of_Tibia" target="_blank" rel="noopener noreferrer" class="text-accent-violet hover:underline">Embrace of Tibia</a>
+                  </td>
+                  <td class="px-3 py-2">Regular · Inquisition</td>
+                  <td class="px-3 py-2">Carlin</td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 text-text-tertiary">6</td>
+                  <td class="px-3 py-2">
+                    <a href="https://tibia.fandom.com/wiki/Heart_of_the_Mountain" target="_blank" rel="noopener noreferrer" class="font-semibold text-accent-violet hover:underline">Heart of the Mountain</a>
+                  </td>
+                  <td class="px-3 py-2">Regular · Mountain</td>
+                  <td class="px-3 py-2">Svargrond</td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 text-text-tertiary">7</td>
+                  <td class="px-3 py-2">
+                    <a href="https://tibia.fandom.com/wiki/Blood_of_the_Mountain" target="_blank" rel="noopener noreferrer" class="font-semibold text-accent-violet hover:underline">Blood of the Mountain</a>
+                  </td>
+                  <td class="px-3 py-2">Regular · Mountain</td>
+                  <td class="px-3 py-2">Port Hope</td>
+                </tr>
+                <tr>
+                  <td class="px-3 py-2 text-text-tertiary">+</td>
+                  <td class="px-3 py-2">
+                    <a href="https://tibia.fandom.com/wiki/Twist_of_Fate" target="_blank" rel="noopener noreferrer" class="text-accent-violet hover:underline">Twist of Fate</a>
+                  </td>
+                  <td class="px-3 py-2">8th slot · Special</td>
+                  <td class="px-3 py-2">Any city's temple</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Pricing and the Inquisition-vs-individual trade-off are at the
+            <a href="#recovery" class="text-accent-violet hover:underline">end of the guide</a>
+            since they're a re-buying concern after you actually die.
+          </p>
+        </section>
+
+        <!-- === SECTION 1: Formula === -->
+        <section id="formula" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            1. The base formula (MeL)
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Tibia computes a value CipSoft calls
+            <span class="font-semibold text-text-primary">Maximum Experience Loss (MeL)</span>
+            before any reductions. The formula has two branches:
+          </p>
+
+          <div class="mt-4 rounded border border-border-subtle bg-bg-sunken p-4 font-mono text-[12px] text-text-primary">
+            <p>Level 1 – 23:</p>
+            <p class="mt-1 pl-4 text-accent-cyan">
+              MeL = 10% × total_accumulated_exp
+            </p>
+            <p class="mt-3">Level 24 and above:</p>
+            <p class="mt-1 pl-4 text-accent-cyan">
+              MeL = ((level + 50) / 100) × 50 × (level² − 5·level + 8)
+            </p>
+          </div>
+
+          <p class="mt-4 text-[13px] leading-relaxed text-text-secondary">
+            A level 200 character dying without any protections loses about
+            <span class="font-semibold text-text-primary">1,755,000 exp</span> —
+            roughly half a level of recovery. The exponential branch means
+            dying at level 800 costs you nearly twenty times more exp than
+            dying at level 200, even though both are "the same percentage"
+            before reductions in the rough sense.
+          </p>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Below level 24 the math is simpler: a flat 10% of your total
+            accumulated experience. Adventurer's Blessing covers most PvP
+            deaths in this range, so this branch mostly matters for unlucky
+            PvE deaths to high-level monsters in shared hunts.
+          </p>
+        </section>
+
+        <!-- === SECTION 2: Reductions === -->
+        <section id="reductions" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            2. Reductions: promotion and blessings
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            The MeL above is the worst case. Two things shave it down:
+          </p>
+
+          <ul class="mt-3 list-disc space-y-2 pl-5 text-[13px] leading-relaxed text-text-secondary">
+            <li>
+              <span class="font-semibold text-text-primary">Promotion</span> —
+              removes 30% of MeL flat. You only ever need to pay for promotion
+              once per character, so this is the single best "death insurance"
+              in the game.
+            </li>
+            <li>
+              <span class="font-semibold text-text-primary">Each Regular Blessing</span>
+              — removes 8% of MeL. There are
+              <span class="font-semibold text-text-primary">seven regular blessings</span>:
+              Wisdom of Solitude, Spark of the Phoenix, Fire of the Suns,
+              Spiritual Shielding, Embrace of Tibia, Blood of the Mountain, and
+              Heart of the Mountain. Stacking all seven gives you 56%.
+            </li>
+          </ul>
+
+          <p class="mt-4 text-[13px] leading-relaxed text-text-secondary">
+            Crucially, the reductions are
+            <span class="font-semibold text-text-primary">additive, not multiplicative</span>:
+          </p>
+
+          <div class="mt-3 rounded border border-border-subtle bg-bg-sunken p-4 font-mono text-[12px] text-text-primary">
+            <p class="text-accent-cyan">
+              factor = max(0, 1 − blessings × 0.08 − (promoted ? 0.30 : 0))
+            </p>
+          </div>
+
+          <p class="mt-4 text-[13px] leading-relaxed text-text-secondary">
+            A promoted character with all 7 regular blessings has
+            <span class="font-semibold text-text-primary">factor = 1 − 0.56 − 0.30 = 0.14</span>
+            — they lose 14% of MeL. Same character without blessings or
+            promotion loses 100% of MeL — over seven times as much. The
+            difference at high levels is brutal: at level 500, that's roughly
+            18 million exp saved per death.
+          </p>
+
+          <p class="mt-4 text-[13px] leading-relaxed text-text-secondary">
+            A common myth is that promotion gives "30% off whatever
+            blessings give you" — that's the multiplicative version and it
+            would yield a 70% × 44% = 30.8% total reduction. The real math is
+            additive, capping at 86% with promotion + 7 blessings. The
+            <a href="/" class="text-accent-violet hover:underline">Death Simulator</a>
+            uses the additive formula.
+          </p>
+        </section>
+
+        <!-- === SECTION 3: Adventurer's Blessing === -->
+        <section id="adv-bless" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            3. Adventurer's Blessing (level 1–20)
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Every brand-new character gets Adventurer's Blessing automatically.
+            It's a free, PvP-only protection that prevents
+            <span class="font-semibold text-text-primary">all</span>
+            experience, skill, and item loss when the bearer is killed by
+            another player. PvE deaths still apply the regular 10% rule.
+          </p>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            It is lost permanently when:
+          </p>
+          <ul class="mt-2 list-disc space-y-1 pl-5 text-[13px] leading-relaxed text-text-secondary">
+            <li>The character reaches level 21 for the first time.</li>
+            <li>The character attacks another player first (PvP initiator).</li>
+          </ul>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Most new players don't realize they're protected and don't try to
+            collect their seven regular blessings until 30+. Adventurer's
+            covers the gap. Once it's gone, you need to buy regular blessings
+            at a temple NPC like every other character.
+          </p>
+        </section>
+
+        <!-- === SECTION 4: Twist of Fate === -->
+        <section id="tof" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            4. Twist of Fate (the 8th "blessing")
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Twist of Fate is sold separately and gets a slot of its own in the
+            blessings screen, but it
+            <span class="font-semibold text-text-primary">does not reduce experience or skill loss</span>.
+            Its job is to absorb a qualifying PvP death so your other
+            protections survive — and "other protections" here means
+            <span class="font-semibold text-text-primary">both your regular blessings AND your Amulet of Loss</span>,
+            simultaneously. One Twist of Fate can save the whole stack.
+          </p>
+
+          <h3 class="mt-5 text-[14px] font-medium text-text-primary">
+            When does it actually trigger?
+          </h3>
+          <p class="mt-2 text-[13px] leading-relaxed text-text-secondary">
+            Per TibiaWiki, the Twist of Fate activates if either of these
+            conditions is true at the moment of death:
+          </p>
+          <ul class="mt-2 list-disc space-y-1 pl-5 text-[13px] leading-relaxed text-text-secondary">
+            <li>
+              At least <span class="font-semibold text-text-primary">5%</span> of the damage you received
+              in the <span class="font-semibold text-text-primary">last 5 minutes</span> came from a
+              character or its summons, or
+            </li>
+            <li>
+              The <span class="font-semibold text-text-primary">fatal strike</span> itself came from a
+              character or its summons.
+            </li>
+          </ul>
+          <p class="mt-2 text-[13px] leading-relaxed text-text-secondary">
+            If neither condition is met (pure monster death), Twist of Fate
+            does not get consumed — your regulars take the full PvE hit
+            instead.
+          </p>
+
+          <h3 class="mt-5 text-[14px] font-medium text-text-primary">
+            Behaviour by death type
+          </h3>
+
+          <div class="mt-3 overflow-x-auto">
+            <table class="w-full border-collapse text-[12px]">
+              <thead class="border-b border-border-subtle text-text-tertiary">
+                <tr>
+                  <th class="px-3 py-2 text-left font-medium">Death type</th>
+                  <th class="px-3 py-2 text-left font-medium">Twist of Fate</th>
+                  <th class="px-3 py-2 text-left font-medium">Regulars + AoL</th>
+                </tr>
+              </thead>
+              <tbody class="text-text-secondary">
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2">PvE death</td>
+                  <td class="px-3 py-2">Stays</td>
+                  <td class="px-3 py-2">Regulars consumed (AoL unused)</td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2">PvP, ToF + (regulars or AoL)</td>
+                  <td class="px-3 py-2">Consumed</td>
+                  <td class="px-3 py-2"><span class="font-semibold text-success">Both saved</span></td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2">PvP, ToF only (no regulars, no AoL)</td>
+                  <td class="px-3 py-2">Stays</td>
+                  <td class="px-3 py-2">Nothing to protect</td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2">PvP, Red Skull</td>
+                  <td class="px-3 py-2">Stays</td>
+                  <td class="px-3 py-2">All regulars lost</td>
+                </tr>
+                <tr>
+                  <td class="px-3 py-2">PvP, Black Skull</td>
+                  <td class="px-3 py-2"><span class="text-danger">Lost</span></td>
+                  <td class="px-3 py-2">All lost</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="mt-4 text-[13px] leading-relaxed text-text-secondary">
+            The high-leverage combo: a character with
+            <span class="font-semibold text-text-primary">5+ regular blessings + Twist of Fate</span>
+            who dies in a normal PvP fight (no red/black skull) loses
+            <span class="font-semibold text-success">zero equipment</span>.
+            The ToF absorbs the blessing-and-AoL consumption, and 5+ regulars
+            already mean 0% backpack and equipment drop chance. The
+            character still loses exp + skill, but walks away wearing
+            everything they had on.
+          </p>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            ToF is almost always worth buying if you spend any time in PvP
+            worlds. The cost-per-life of replacing all seven regulars after
+            a single PvP death dwarfs the price of a Twist of Fate scroll.
+          </p>
+        </section>
+
+        <!-- === SECTION 5: PvE === -->
+        <section id="pve" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            5. PvE death (killed by a monster)
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            The most common case: you over-extended in a hunt or got
+            one-shot by a dangerous spawn. PvE deaths apply the MeL formula
+            with promotion + blessings reductions and consume
+            <span class="font-semibold text-text-primary">all</span> your
+            regular blessings. Twist of Fate is preserved (it only triggers
+            on PvP), and Amulet of Loss is preserved (it has no PvE role).
+          </p>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Backpack and worn items follow the
+            <a href="#items" class="text-accent-violet hover:underline">item drop table</a>
+            based on how many regular blessings you had. With 5 or more,
+            nothing drops. With 0, you can lose your entire backpack.
+          </p>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Practical takeaway: regular hunters should keep all 7 blessings
+            active at all times. The cost is trivial compared to a single
+            deep-spawn fail.
+          </p>
+        </section>
+
+        <!-- === SECTION 6: PvP White === -->
+        <section id="pvp-white" class="mt-10">
+          <h2 class="flex items-center gap-3 text-[18px] font-medium text-text-primary">
+            <img
+              src="/sprites/skulls/white.gif"
+              alt="White Skull"
+              class="h-7 w-7"
+              loading="lazy"
+              decoding="async"
+              style="image-rendering: pixelated;"
+            />
+            6. PvP — White Skull (or no skull)
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            You died fighting another player and you were the
+            <span class="font-semibold text-text-primary">aggressor</span>
+            recently, OR you have no skull at all (someone else attacked you
+            first). The white skull is something the game
+            <em class="not-italic font-semibold">puts on you</em> after you
+            attack another player — it's a temporary marker, not something
+            you choose. EXP and skill loss apply normally, but the blessing
+            consumption matrix gets nicer:
+          </p>
+
+          <ul class="mt-3 list-disc space-y-2 pl-5 text-[13px] leading-relaxed text-text-secondary">
+            <li>
+              If you have <span class="font-semibold text-text-primary">Twist of Fate + regulars and/or AoL</span>,
+              only the ToF is consumed. Your regular blessings
+              <span class="font-semibold text-text-primary">and</span> your
+              AoL both survive — ToF protects them together, not as an OR.
+            </li>
+            <li>
+              If you have <span class="font-semibold text-text-primary">no ToF</span>,
+              regulars are consumed normally and AoL (if equipped) saves your
+              gear and breaks.
+            </li>
+            <li>
+              The big combo:
+              <span class="font-semibold text-text-primary">5+ regular blessings + Twist of Fate</span>
+              means you lose
+              <span class="font-semibold text-success">no equipment at all</span>
+              on a regular PvP death. ToF absorbs the blessing consumption;
+              the 5+ regulars give you a 0% drop on backpack and equipped
+              slots (see <a href="#items" class="text-accent-violet hover:underline">item drop table</a>).
+              You still lose exp + skill, but everything else is intact.
+            </li>
+          </ul>
+        </section>
+
+        <!-- === SECTION 7: PvP Red === -->
+        <section id="pvp-red" class="mt-10">
+          <h2 class="flex items-center gap-3 text-[18px] font-medium text-text-primary">
+            <img
+              src="/sprites/skulls/red.gif"
+              alt="Red Skull"
+              class="h-7 w-7"
+              loading="lazy"
+              decoding="async"
+              style="image-rendering: pixelated;"
+            />
+            7. PvP — Red Skull
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            A Red Skull is
+            <em class="not-italic font-semibold">earned</em> — it isn't a
+            cosmetic you toggle. The game stamps it on a character after they
+            kill several unjustified players within a tracking window. It's a
+            punishment, not a choice, and the penalty on death is severe:
+          </p>
+
+          <ul class="mt-3 list-disc space-y-2 pl-5 text-[13px] leading-relaxed text-text-secondary">
+            <li>
+              <span class="font-semibold text-danger">Every worn item drops</span>
+              with 100% probability — backpack, weapon, armour, helmet, boots,
+              ring, amulet, light source. Amulet of Loss does
+              <span class="font-semibold text-text-primary">not</span> save you
+              here.
+            </li>
+            <li>
+              All seven regular blessings are lost.
+            </li>
+            <li>
+              Twist of Fate <span class="font-semibold text-text-primary">survives</span>
+              per the Skull System wiki — counter-intuitive but real.
+            </li>
+            <li>
+              EXP and skill loss apply normally (with promotion + remaining
+              blessings reductions, before they're consumed).
+            </li>
+          </ul>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            If you have a Red Skull active, log out cautiously, don't carry
+            rare items, and consider re-rolling on a different server unless
+            you're playing a dedicated PK character.
+          </p>
+        </section>
+
+        <!-- === SECTION 8: PvP Black === -->
+        <section id="pvp-black" class="mt-10">
+          <h2 class="flex items-center gap-3 text-[18px] font-medium text-text-primary">
+            <img
+              src="/sprites/skulls/black.gif"
+              alt="Black Skull"
+              class="h-7 w-7"
+              loading="lazy"
+              decoding="async"
+              style="image-rendering: pixelated;"
+            />
+            8. PvP — Black Skull
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            The worst state in Tibia and, like Red Skull, something you
+            <em class="not-italic font-semibold">earn</em> by crossing the
+            unjustified-kill threshold while already red-skulled. On death:
+          </p>
+
+          <ul class="mt-3 list-disc space-y-2 pl-5 text-[13px] leading-relaxed text-text-secondary">
+            <li>
+              Every worn item drops — same as Red Skull.
+            </li>
+            <li>
+              <span class="font-semibold text-danger">All blessings lost, including Twist of Fate</span>.
+            </li>
+            <li>
+              EXP and skill loss apply.
+            </li>
+            <li>
+              You revive at the temple with
+              <span class="font-semibold text-text-primary">40 HP and 0 mana</span>
+              — useful for nothing until you eat back to full.
+            </li>
+          </ul>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            The Black Skull lasts for a long real-time duration (CipSoft
+            tweaks this; check the official patch notes for the current
+            value). If you're carrying anything you'd hate to lose, don't.
+          </p>
+        </section>
+
+        <!-- === SECTION 9: Unfair Fight === -->
+        <section id="unfair" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            9. Unfair Fight Reduction
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            CipSoft applies an extra penalty reduction when the total combined
+            level of the players who killed you is significantly higher than
+            yours. The wiki page is the source of truth for the exact
+            coefficient (it has changed over the years), but the principle is:
+            getting ganked by a 500+200 team while you're level 300 costs you
+            dramatically less exp than dying to a single equal-level
+            opponent.
+          </p>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            The TibiaPlan Death Simulator
+            <span class="font-semibold text-text-primary">does not currently model Unfair Fight Reduction</span>
+            — the formula is rarely consulted because it's hard to predict
+            who's coming for you. Treat the simulator's PvP numbers as the
+            <em class="not-italic font-semibold">worst-case</em> PvP loss; real
+            gank scenarios are often kinder.
+          </p>
+        </section>
+
+        <!-- === SECTION 10: Skill Loss === -->
+        <section id="skills" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            10. Skill loss and spent mana loss
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            The percentage of exp you actually lost (after promotion +
+            blessing reductions) is the same percentage applied to your
+            accumulated skill tries and spent mana. Two corollaries:
+          </p>
+
+          <ul class="mt-3 list-disc space-y-2 pl-5 text-[13px] leading-relaxed text-text-secondary">
+            <li>
+              With 7 blessings + promotion, you only lose 14% of your skill
+              tries. That's typically less than a full level on most skills
+              and usually invisible after a single training session.
+            </li>
+            <li>
+              Without blessings or promotion, you lose 100% of MeL × your
+              tries — which can mean watching multiple skill levels evaporate
+              on a single bad death.
+            </li>
+          </ul>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            The home page Death Simulator has a
+            <span class="font-semibold text-text-primary">"Want to know skill exp loss?"</span>
+            expansion that asks for your current skill levels + "% to next"
+            and tells you exactly where you'll land after the death. Useful
+            before doing risky content.
+          </p>
+        </section>
+
+        <!-- === SECTION 11: Items === -->
+        <section id="items" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            11. Item drop chances (PvE and PvP-white)
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            For deaths that aren't Red or Black Skull, item loss is
+            probabilistic and depends on your regular blessing count
+            <em class="not-italic">at the moment of death</em>:
+          </p>
+
+          <div class="mt-4 overflow-x-auto">
+            <table class="w-full border-collapse text-[12px]">
+              <thead class="border-b border-border-subtle text-text-tertiary">
+                <tr>
+                  <th class="px-3 py-2 text-left font-medium">Regular blessings</th>
+                  <th class="px-3 py-2 text-right font-medium">Backpack drop</th>
+                  <th class="px-3 py-2 text-right font-medium">Each equipped slot</th>
+                </tr>
+              </thead>
+              <tbody class="text-text-secondary">
+                <tr class="border-b border-border-subtle/50"><td class="px-3 py-2">0</td><td class="px-3 py-2 text-right">100%</td><td class="px-3 py-2 text-right">10%</td></tr>
+                <tr class="border-b border-border-subtle/50"><td class="px-3 py-2">1</td><td class="px-3 py-2 text-right">70%</td><td class="px-3 py-2 text-right">7%</td></tr>
+                <tr class="border-b border-border-subtle/50"><td class="px-3 py-2">2</td><td class="px-3 py-2 text-right">45%</td><td class="px-3 py-2 text-right">4.5%</td></tr>
+                <tr class="border-b border-border-subtle/50"><td class="px-3 py-2">3</td><td class="px-3 py-2 text-right">25%</td><td class="px-3 py-2 text-right">2.5%</td></tr>
+                <tr class="border-b border-border-subtle/50"><td class="px-3 py-2">4</td><td class="px-3 py-2 text-right">10%</td><td class="px-3 py-2 text-right">1%</td></tr>
+                <tr><td class="px-3 py-2 font-semibold text-success">5+</td><td class="px-3 py-2 text-right text-success">0%</td><td class="px-3 py-2 text-right text-success">0%</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Twist of Fate
+            <span class="font-semibold text-text-primary">does not count</span>
+            toward the 5-blessing item-protection threshold — only the seven
+            regulars do. A character with ToF + 4 regulars still has a 10%
+            backpack drop chance. To go fully item-safe in PvE you need at
+            least 5 of the regulars active.
+          </p>
+        </section>
+
+        <!-- === SECTION 12: Recovery === -->
+        <section id="recovery" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            12. After you die: how to re-bless
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            You revive at the
+            <span class="font-semibold text-text-primary">temple of your home town</span>
+            with full HP and mana — unless you had Black Skull, in which case
+            it's 40 HP and 0 mana. Skills don't snap back; train them as
+            usual. If items dropped, they remain at the death tile for a long
+            window — check the in-game map and pick them up if it's safe.
+          </p>
+
+          <p class="mt-4 text-[13px] leading-relaxed text-text-secondary">
+            Re-buying blessings is the part most new players get wrong. There
+            are two paths, depending on whether you've completed
+            <a href="https://tibia.fandom.com/wiki/The_Inquisition_Quest" target="_blank" rel="noopener noreferrer" class="text-accent-violet hover:underline">The Inquisition Quest</a>.
+          </p>
+
+          <h3 class="mt-6 text-[14px] font-medium text-text-primary">
+            Path 1: The Inquisition package (recommended)
+          </h3>
+          <p class="mt-2 text-[13px] leading-relaxed text-text-secondary">
+            After completing The Inquisition Quest you can buy the
+            <span class="font-semibold text-text-primary">Blessing of the Inquisition</span>
+            from a single NPC in Thais. It bundles the
+            <span class="font-semibold text-text-primary">five non-mountain regular blessings</span>
+            (Wisdom of Solitude, Spark of the Phoenix, Fire of the Suns,
+            Spiritual Shielding, and Embrace of Tibia) into one transaction.
+            The package costs 10% more than buying the five separately, but
+            it saves you traveling to five different cities — usually worth it.
+          </p>
+
+          <div class="mt-3 rounded border border-border-subtle bg-bg-sunken p-4 font-mono text-[12px] text-text-primary">
+            <p>Package cost:</p>
+            <p class="mt-2 pl-4 text-accent-cyan">
+              Level &lt; 30 : 2,000 × 5 × 1.1 = <span class="font-semibold">11,000 gp</span>
+            </p>
+            <p class="mt-1 pl-4 text-accent-cyan">
+              Level 30 – 120: 200 × (level − 20) × 5 × 1.1 gp
+            </p>
+            <p class="mt-1 pl-4 text-accent-cyan">
+              Level &gt; 120: 20,000 × 5 × 1.1 = <span class="font-semibold">110,000 gp</span>
+            </p>
+          </div>
+
+          <h3 class="mt-6 text-[14px] font-medium text-text-primary">
+            Path 2: Individual blessings (no quest)
+          </h3>
+          <p class="mt-2 text-[13px] leading-relaxed text-text-secondary">
+            Without The Inquisition Quest, each of the five non-mountain
+            blessings has its own NPC in a specific city — you have to travel
+            to each. The two mountain blessings always require their own trip
+            no matter what; there's no package shortcut for them.
+          </p>
+
+          <h4 class="mt-4 text-[12px] font-medium uppercase tracking-wider text-text-tertiary">
+            Pricing per individual blessing
+          </h4>
+          <p class="mt-2 text-[13px] leading-relaxed text-text-secondary">
+            The five non-mountain regular blessings share the same
+            level-scaled price formula and
+            <span class="font-semibold text-text-primary">cap at level 120</span>:
+          </p>
+
+          <div class="mt-3 rounded border border-border-subtle bg-bg-sunken p-4 font-mono text-[12px] text-text-primary">
+            <p class="text-accent-cyan">
+              Level &lt; 30 : <span class="font-semibold">2,000 gp</span>
+            </p>
+            <p class="mt-1 text-accent-cyan">
+              Level 30 – 120: 2,000 + (level − 30) × 200 gp
+            </p>
+            <p class="mt-1 text-accent-cyan">
+              Level &gt; 120 : <span class="font-semibold">20,000 gp</span> (cap)
+            </p>
+          </div>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            <span class="font-semibold text-text-primary">Twist of Fate</span>
+            follows the same formula up to level 120, then keeps scaling
+            (its own cap is higher — 50,000 gp at level 270 per TibiaWiki).
+          </p>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            <span class="font-semibold text-text-primary">Heart of the Mountain</span>
+            and
+            <span class="font-semibold text-text-primary">Blood of the Mountain</span>
+            use their own (higher) pricing scheme — check
+            <a href="https://tibia.fandom.com/wiki/Blessings" target="_blank" rel="noopener noreferrer" class="text-accent-violet hover:underline">TibiaWiki</a>
+            for the current numbers since CipSoft has adjusted them more
+            than once.
+          </p>
+
+          <h4 class="mt-5 text-[12px] font-medium uppercase tracking-wider text-text-tertiary">
+            Package vs individual — when does each win?
+          </h4>
+          <p class="mt-2 text-[13px] leading-relaxed text-text-secondary">
+            Both formulas cap at level 120, so the math at any level past
+            that is constant: 5 individual bless = 100,000 gp; the
+            Inquisition package = 110,000 gp (the package is the same five
+            bless plus a 10% surcharge). At every level, the package costs
+            <span class="font-semibold text-text-primary">10% more</span>.
+          </p>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            The real question isn't "which is cheaper" — individual always
+            is — but
+            <span class="font-semibold text-text-primary">whether 10% extra is worth not visiting five different cities</span>.
+            For most players who die regularly, yes. The two mountain
+            blessings (Heart, Blood) still require their own dedicated trips
+            no matter what, so the package only saves travel for the five
+            it covers.
+          </p>
+
+          <p class="mt-4 text-[13px] leading-relaxed text-text-secondary">
+            For NPC names and exact buying locations, see the
+            <a href="#overview" class="text-accent-violet hover:underline">overview table at the top of this guide</a>
+            — each blessing name links to its TibiaWiki page where you'll
+            find the NPC's exact position and the keyword they respond to.
+          </p>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            If you die often, doing The Inquisition Quest pays for itself
+            in saved travel within a handful of deaths because it collapses
+            five NPC visits into one. The two mountain blessings + ToF
+            still need their individual trips.
+          </p>
+        </section>
+
+        <!-- === Sources === -->
+        <section class="mt-12 border-t border-border-subtle pt-6">
+          <p class="text-[10px] uppercase tracking-wider text-text-tertiary">
+            Sources
+          </p>
+          <ul class="mt-2 space-y-1 text-[11px] text-text-secondary">
+            <li>
+              <a href="https://tibia.fandom.com/wiki/Death" target="_blank" rel="noopener noreferrer" class="text-accent-violet hover:underline">
+                TibiaWiki — Death
+              </a>
+            </li>
+            <li>
+              <a href="https://tibia.fandom.com/wiki/Blessings" target="_blank" rel="noopener noreferrer" class="text-accent-violet hover:underline">
+                TibiaWiki — Blessings
+              </a>
+            </li>
+            <li>
+              <a href="https://tibia.fandom.com/wiki/Twist_of_Fate" target="_blank" rel="noopener noreferrer" class="text-accent-violet hover:underline">
+                TibiaWiki — Twist of Fate
+              </a>
+            </li>
+            <li>
+              <a href="https://tibia.fandom.com/wiki/Adventurer%27s_Blessing" target="_blank" rel="noopener noreferrer" class="text-accent-violet hover:underline">
+                TibiaWiki — Adventurer's Blessing
+              </a>
+            </li>
+            <li>
+              <a href="https://tibia.fandom.com/wiki/Skull_System" target="_blank" rel="noopener noreferrer" class="text-accent-violet hover:underline">
+                TibiaWiki — Skull System
+              </a>
+            </li>
+            <li>
+              <a href="https://tibia.fandom.com/wiki/The_Inquisition_Quest" target="_blank" rel="noopener noreferrer" class="text-accent-violet hover:underline">
+                TibiaWiki — The Inquisition Quest
+              </a>
+            </li>
+          </ul>
+        </section>
+
+        <!-- === CTA === -->
+        <div class="mt-10 rounded-md border border-accent-violet/40 bg-accent-violet/5 p-5 text-center">
+          <p class="text-[11px] uppercase tracking-wider text-accent-violet">
+            Try it yourself
+          </p>
+          <p class="mx-auto mt-2 max-w-md text-[13px] leading-relaxed text-text-secondary">
+            Plug your character into the Death Simulator on the home page
+            and see your exact exp + skill loss for any scenario.
+          </p>
+          <a
+            href="/"
+            class="mt-4 inline-flex items-center gap-2 rounded px-5 py-2 text-[12px] font-medium text-bg-primary transition-opacity hover:opacity-90"
+            style="background: linear-gradient(135deg, #9B8AFB 0%, #5DCAE8 100%);"
+          >
+            Open Death Simulator →
+          </a>
+        </div>
+      </article>
+
+      <!--
+        Sticky sidebar with TOC + Simulator CTA. Desktop only — mobile gets
+        the inline TOC at the top of the article instead.
+      -->
+      <aside class="hidden lg:block">
+        <div class="sticky top-32 space-y-4">
+          <nav class="rounded-md border border-border-subtle bg-bg-surface p-4">
+            <p class="text-[10px] uppercase tracking-wider text-text-tertiary">
+              On this page
+            </p>
+            <ul class="mt-2 space-y-1 text-[12px] text-text-secondary">
+              <li><a href="#overview" class="hover:text-accent-violet">Meet the blessings</a></li>
+              <li><a href="#formula" class="hover:text-accent-violet">1. Base formula (MeL)</a></li>
+              <li><a href="#reductions" class="hover:text-accent-violet">2. Promotion + blessings</a></li>
+              <li><a href="#adv-bless" class="hover:text-accent-violet">3. Adventurer's Blessing</a></li>
+              <li><a href="#tof" class="hover:text-accent-violet">4. Twist of Fate</a></li>
+              <li><a href="#pve" class="hover:text-accent-violet">5. PvE death</a></li>
+              <li><a href="#pvp-white" class="hover:text-accent-violet">6. PvP — White Skull</a></li>
+              <li><a href="#pvp-red" class="hover:text-accent-violet">7. PvP — Red Skull</a></li>
+              <li><a href="#pvp-black" class="hover:text-accent-violet">8. PvP — Black Skull</a></li>
+              <li><a href="#unfair" class="hover:text-accent-violet">9. Unfair Fight Reduction</a></li>
+              <li><a href="#skills" class="hover:text-accent-violet">10. Skill + mana loss</a></li>
+              <li><a href="#items" class="hover:text-accent-violet">11. Item drop chances</a></li>
+              <li><a href="#recovery" class="hover:text-accent-violet">12. Recovery &amp; pricing</a></li>
+            </ul>
+          </nav>
+
+          <div class="rounded-md border border-accent-violet/40 bg-accent-violet/5 p-4 text-center">
+            <p class="text-[10px] uppercase tracking-wider text-accent-violet">
+              Death Simulator
+            </p>
+            <p class="mx-auto mt-2 text-[12px] leading-relaxed text-text-secondary">
+              Plug your numbers into the live calculator.
+            </p>
+            <a
+              href="/"
+              class="mt-3 inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-[11px] font-medium text-bg-primary transition-opacity hover:opacity-90"
+              style="background: linear-gradient(135deg, #9B8AFB 0%, #5DCAE8 100%);"
+            >
+              Open it →
+            </a>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="mt-8 flex justify-center gap-3">
+      <a
+        href="/guides"
+        class="rounded border border-border-subtle bg-bg-sunken px-4 py-2 text-[12px] text-text-secondary transition-colors hover:border-border-emphasis hover:text-text-primary"
+      >
+        ← All guides
+      </a>
+      <a
+        href="/"
+        class="rounded border border-border-subtle bg-bg-sunken px-4 py-2 text-[12px] text-text-secondary transition-colors hover:border-border-emphasis hover:text-text-primary"
+      >
+        ← Back to TibiaPlan
+      </a>
+    </div>
+  </main>
+
+  <Footer />
+</Layout>

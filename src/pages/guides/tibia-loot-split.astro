@@ -1,0 +1,927 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import Header from "../../components/Header.astro";
+import Footer from "../../components/Footer.astro";
+
+const PUBLISHED = "2026-05-15";
+const MODIFIED = "2026-05-15";
+const URL = "https://tibiaplan.com/guides/tibia-loot-split";
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  headline: "Tibia Loot Split Math Explained: Why You Owe (or Are Owed)",
+  description:
+    "How Tibia loot splits actually work: balance vs supplies, the fair-share formula, settlement algorithm, and why you can owe money on a losing hunt.",
+  datePublished: PUBLISHED,
+  dateModified: MODIFIED,
+  author: { "@type": "Organization", name: "TibiaPlan" },
+  publisher: {
+    "@type": "Organization",
+    name: "TibiaPlan",
+    url: "https://tibiaplan.com",
+  },
+  mainEntityOfPage: { "@type": "WebPage", "@id": URL },
+  url: URL,
+};
+---
+
+<Layout
+  title="Tibia Loot Split Math Explained: Why You Owe (or Are Owed) - TibiaPlan"
+  description="How Tibia loot splits work: balance vs supplies, the fair-share formula, settlement algorithm, and why you can owe money on a net-loss hunt."
+  keywords={[
+    "tibia loot split",
+    "tibia loot split calculator",
+    "tibia party hunt analyzer",
+    "tibia hunt split",
+    "loot split formula tibia",
+  ]}
+  structuredData={structuredData}
+>
+  <Header />
+
+  <main class="mx-auto max-w-7xl px-4 py-10">
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
+      <article class="rounded-md border border-border-subtle bg-bg-surface p-6 sm:p-10">
+        <!-- Header -->
+        <header>
+          <p class="text-[10px] uppercase tracking-[0.2em] text-accent-violet">
+            Guide · Loot &amp; Hunts
+          </p>
+          <h1 class="mt-2 text-[26px] font-medium leading-tight tracking-wide text-text-primary sm:text-[30px]">
+            Tibia Loot Split Math Explained: Why You Owe (or Are Owed)
+          </h1>
+          <p class="mt-3 text-[10px] uppercase tracking-wider text-text-tertiary">
+            7 min read · Updated May 2026
+          </p>
+          <p class="mt-4 text-[13px] leading-relaxed text-text-secondary">
+            You finished a 2-hour hunt with a friend. The Hunt Analyzer says
+            you made 70k profit and they made 37k. The
+            <a href="/" class="text-accent-violet hover:underline">TibiaPlan Loot Split calculator</a>
+            tells you to send them
+            <span class="font-semibold text-text-primary">16,300 gp</span>.
+            Wait — you made more than them, why do you owe THEM? This guide
+            explains the math behind that number, plus the
+            counter-intuitive case where you lose money on the hunt
+            <em class="not-italic">and</em> still owe your party gold.
+          </p>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            One thing up front to be honest about: the calculator
+            <span class="font-semibold text-text-primary">does not price loot itself</span>.
+            It splits whatever your in-game Party Hunt Analyser already
+            decided each item was worth. That decision is configurable
+            (NPC price vs Market price vs Leader's custom prices) and we
+            cover it in
+            <a href="#prices" class="text-accent-violet hover:underline">Section 1</a> —
+            getting the price source right is usually a bigger deal than
+            anything the split math does.
+          </p>
+        </header>
+
+        <!-- Mobile-only TOC -->
+        <nav class="mt-8 rounded-md border border-border-subtle bg-bg-sunken p-4 lg:hidden">
+          <p class="text-[10px] uppercase tracking-wider text-text-tertiary">
+            On this page
+          </p>
+          <ul class="mt-2 space-y-1 text-[12px] text-text-secondary">
+            <li><a href="#what" class="hover:text-accent-violet">What loot split actually does</a></li>
+            <li><a href="#prices" class="hover:text-accent-violet">1. Where the prices come from</a></li>
+            <li><a href="#analyzer" class="hover:text-accent-violet">2. The Hunt Analyzer log</a></li>
+            <li><a href="#step1" class="hover:text-accent-violet">3. Step 1: Fair share</a></li>
+            <li><a href="#step2" class="hover:text-accent-violet">4. Step 2: Surplus or deficit</a></li>
+            <li><a href="#step3" class="hover:text-accent-violet">5. Step 3: The settlement</a></li>
+            <li><a href="#example" class="hover:text-accent-violet">6. Worked example (2 players)</a></li>
+            <li><a href="#supplies" class="hover:text-accent-violet">7. Why supplies don't matter directly</a></li>
+            <li><a href="#net-loss" class="hover:text-accent-violet">8. The net-loss hunt scenario</a></li>
+            <li><a href="#three" class="hover:text-accent-violet">9. Three or more players</a></li>
+            <li><a href="#objections" class="hover:text-accent-violet">10. Common objections</a></li>
+          </ul>
+        </nav>
+
+        <!-- === SECTION 1: Where prices come from === -->
+        <section id="prices" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            1. Where the prices come from (this is the big one)
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Before any split math happens, Tibia has already assigned a
+            number to every item that dropped. That number is what feeds
+            into your Loot, Supplies, and Balance totals. The
+            <span class="font-semibold text-text-primary">Loot Type</span>
+            setting in the Party Hunt Analyser decides
+            <em class="not-italic">how</em> those numbers are picked. There
+            are three options:
+          </p>
+
+          <div class="mt-4 overflow-x-auto">
+            <table class="w-full border-collapse text-[12px]">
+              <thead class="border-b border-border-subtle text-text-tertiary">
+                <tr>
+                  <th class="px-3 py-2 text-left font-medium">Loot Type</th>
+                  <th class="px-3 py-2 text-left font-medium">Price source</th>
+                  <th class="px-3 py-2 text-left font-medium">Who sets it</th>
+                </tr>
+              </thead>
+              <tbody class="text-text-secondary">
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 font-semibold text-text-primary">Market</td>
+                  <td class="px-3 py-2">Average market price on your world (live)</td>
+                  <td class="px-3 py-2">Each player individually</td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 font-semibold text-text-primary">NPC</td>
+                  <td class="px-3 py-2">Fixed NPC buy value (same for everyone)</td>
+                  <td class="px-3 py-2">Each player individually</td>
+                </tr>
+                <tr>
+                  <td class="px-3 py-2 font-semibold text-text-primary">Leader</td>
+                  <td class="px-3 py-2">Custom prices set by the party leader</td>
+                  <td class="px-3 py-2">Party leader (Premium feature)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            The default is
+            <span class="font-semibold text-text-primary">Market</span>. The
+            <span class="font-semibold text-text-primary">Loot Type: Leader</span>
+            line in the Hunt Analyzer's "Copy to Clipboard" output tells you
+            which mode produced the numbers in that log.
+          </p>
+
+          <h3 class="mt-6 text-[14px] font-medium text-text-primary">
+            Why this matters more than the split math
+          </h3>
+          <p class="mt-2 text-[13px] leading-relaxed text-text-secondary">
+            Market prices in Tibia can swing wildly because they're
+            controlled by other players. A common situation:
+          </p>
+
+          <ul class="mt-2 list-disc space-y-2 pl-5 text-[13px] leading-relaxed text-text-secondary">
+            <li>
+              <span class="font-semibold text-text-primary">NPC under-prices.</span>
+              An item the NPC buys for 5,000 gp may be selling on the
+              market for 1 gp because one player listed it ridiculously
+              low. Using <em class="not-italic">Market</em>, the analyzer
+              values that drop at 1 gp — and your split math is missing
+              4,999 gp of real value per drop. Switching to
+              <em class="not-italic">NPC</em> recovers the real floor.
+            </li>
+            <li>
+              <span class="font-semibold text-text-primary">NPC over-undersells.</span>
+              The reverse: an item the NPC pays 100 gp for might sell on
+              the market for 5,000 gp. Using <em class="not-italic">NPC</em>
+              under-values the drop; <em class="not-italic">Market</em> is
+              more accurate.
+            </li>
+            <li>
+              <span class="font-semibold text-text-primary">NPC doesn't buy at all.</span>
+              Many high-end items are market-only — no NPC accepts them.
+              Under <em class="not-italic">NPC</em> they show as 0 gp, which
+              is also wrong.
+            </li>
+          </ul>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            There's no single right answer. Most parties go with
+            <span class="font-semibold text-text-primary">Market</span> for
+            convenience because it auto-tracks supply costs (potions, runes)
+            accurately. Premium parties hunting for rare drops often switch
+            the leader to
+            <em class="not-italic">Leader</em> mode with custom prices for
+            the specific rares they expect, then leave everything else on
+            market.
+          </p>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            <span class="font-semibold text-text-primary">Important:</span>
+            for the split to be fair, every party member's in-game analyzer
+            should be using the
+            <em class="not-italic">same</em> Loot Type. If you're on Market
+            and your friend is on NPC, your logs will disagree on what the
+            hunt was worth before the math even starts. Talk it out before
+            the hunt.
+          </p>
+
+          <p class="mt-4 text-[13px] leading-relaxed text-text-secondary">
+            Once the in-game analyzer has produced its numbers, the rest of
+            this guide is the math TibiaPlan applies on top. The math is
+            simple; the prices are where the actual money hides.
+          </p>
+
+          <!-- Trust + cheating sub-section -->
+          <h3 class="mt-8 text-[14px] font-medium text-text-primary">
+            Can someone cheat the prices?
+          </h3>
+          <p class="mt-2 text-[13px] leading-relaxed text-text-secondary">
+            Yes — there are three real attack vectors party members should
+            be aware of:
+          </p>
+
+          <ol class="mt-3 list-decimal space-y-3 pl-5 text-[13px] leading-relaxed text-text-secondary">
+            <li>
+              <span class="font-semibold text-text-primary">Leader-mode price abuse.</span>
+              If the party leader sets Loot Type to
+              <em class="not-italic">Leader</em> and uses custom prices,
+              they can under-value items they pick up themselves. Their
+              Balance in the log looks small, so the split moves
+              <em class="not-italic">less</em> gp away from them — yet they
+              still walk away with the under-priced item, which is worth its
+              real market value in their depot. Net effect: they steal the
+              spread.
+            </li>
+            <li>
+              <span class="font-semibold text-text-primary">Market manipulation (anyone, not just party).</span>
+              The
+              <em class="not-italic">Market</em> mode pulls live world
+              prices. If a random player listed an item ridiculously cheap,
+              that pushes the world average down for the duration of the
+              hunt. A friend of one party member doing this on purpose can
+              skew the split. Thin markets (few listings) are most
+              vulnerable.
+            </li>
+            <li>
+              <span class="font-semibold text-text-primary">NPC-mode rare under-valuation.</span>
+              <em class="not-italic">NPC</em> mode looks innocent but
+              under-values rares and market-only items (which show as 0 gp
+              when NPCs don't buy them). If the leader expects rare drops
+              and chooses NPC mode "because it's stable", they're banking
+              on receiving the rares physically while the split sees a
+              cheap hunt.
+            </li>
+          </ol>
+
+          <h3 class="mt-6 text-[14px] font-medium text-text-primary">
+            How to spot it (or pre-empt it)
+          </h3>
+          <ul class="mt-3 list-disc space-y-2 pl-5 text-[13px] leading-relaxed text-text-secondary">
+            <li>
+              Compare visible drops mid-hunt with the analyzer numbers
+              afterwards. If you saw a clear rare drop and the leader's
+              loot total didn't jump, ask why.
+            </li>
+            <li>
+              Cross-check any high-value item against the
+              <a href="https://www.tibia.com/community/?subtopic=market" target="_blank" rel="noopener noreferrer" class="text-accent-violet hover:underline">in-game Market</a>
+              or a fansite price tracker before accepting a split.
+            </li>
+            <li>
+              Watch for big disparities between players that don't match
+              the hunt: if everyone fought equally and one player ended
+              with massively more or less, the prices are usually the
+              cause.
+            </li>
+          </ul>
+
+          <h3 class="mt-6 text-[14px] font-medium text-text-primary">
+            The honest approach (by trust level)
+          </h3>
+
+          <div class="mt-3 overflow-x-auto">
+            <table class="w-full border-collapse text-[12px]">
+              <thead class="border-b border-border-subtle text-text-tertiary">
+                <tr>
+                  <th class="px-3 py-2 text-left font-medium">Group trust</th>
+                  <th class="px-3 py-2 text-left font-medium">Recommended setup</th>
+                  <th class="px-3 py-2 text-left font-medium">Trade-off</th>
+                </tr>
+              </thead>
+              <tbody class="text-text-secondary">
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 font-semibold text-text-primary">Strangers / pug</td>
+                  <td class="px-3 py-2">Loot Type = <span class="font-semibold">Market</span>, everyone confirms same setting before pulling first mob</td>
+                  <td class="px-3 py-2">Vulnerable to market manipulation but verifiable by anyone</td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 font-semibold text-text-primary">Casual friends</td>
+                  <td class="px-3 py-2">
+                    <span class="font-semibold">Market</span> with a quick
+                    sanity check on rares after the hunt
+                  </td>
+                  <td class="px-3 py-2">Light overhead; usually fine</td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 font-semibold text-text-primary">Conservative parties</td>
+                  <td class="px-3 py-2">Loot Type = <span class="font-semibold">NPC</span></td>
+                  <td class="px-3 py-2">No manipulation possible, but market-only rares show as 0 gp — adjust manually after hunt</td>
+                </tr>
+                <tr>
+                  <td class="px-3 py-2 font-semibold text-text-primary">Guild / family</td>
+                  <td class="px-3 py-2">Loot Type = <span class="font-semibold">Leader</span>, custom prices agreed and posted in guild Discord BEFORE the hunt</td>
+                  <td class="px-3 py-2">Highest accuracy if everyone trusts the leader; otherwise opens the abuse vector</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            The single most-honest default is
+            <span class="font-semibold text-text-primary">Market mode with everyone on the same setting</span>.
+            It's not perfect (market manipulation exists) but it's
+            verifiable by every party member without trusting any single
+            person. If a leader pushes hard for Leader mode without a clear
+            reason, that itself is a flag worth pausing on.
+          </p>
+        </section>
+
+        <!-- === Overview === -->
+        <section id="what" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            What loot split actually does
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            A loot split has one job:
+            <span class="font-semibold text-text-primary">equalize everyone's profit</span>
+            from a shared hunt. After you transfer the gp the calculator
+            tells you to, every party member ends the hunt with the
+            <em class="not-italic font-semibold">same balance</em>. Not the
+            same loot, not the same supplies — the same balance.
+          </p>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            This sounds simple, but Tibia adds two wrinkles:
+          </p>
+          <ul class="mt-2 list-disc space-y-1 pl-5 text-[13px] leading-relaxed text-text-secondary">
+            <li>
+              Each player's <span class="font-semibold text-text-primary">supplies</span>
+              come out of their own pocket — knights burn potions, paladins
+              burn ammo, mages burn runes/mana potions. So balance isn't
+              just "what you looted" — it's
+              <span class="font-mono text-accent-cyan">loot − supplies</span>.
+            </li>
+            <li>
+              Loot is random. One player can pick up a 50,000 gp rare while
+              the other got vials. The split smooths this out.
+            </li>
+          </ul>
+        </section>
+
+        <!-- === Analyzer === -->
+        <section id="analyzer" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            2. The Hunt Analyzer log
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Tibia's in-game
+            <span class="font-semibold text-text-primary">Party Hunt Analyzer</span>
+            tracks five numbers per player during a hunt: Loot, Supplies,
+            Balance, Damage, and Healing. The leader presses "Copy to
+            Clipboard" and pastes it into the
+            <a href="/" class="text-accent-violet hover:underline">TibiaPlan Loot Split tab</a>.
+            A typical 2-player log looks like this:
+          </p>
+
+          <pre class="mt-4 overflow-x-auto rounded border border-border-subtle bg-bg-sunken p-4 text-[11px] leading-relaxed text-text-secondary"><code>Session: 02:00h
+Session data: From 2026-05-15, 14:00:00 to 16:00:00
+Loot Type: Leader
+
+Loot: 285,400
+Supplies: 178,200
+Balance: 107,200
+Damage: 142,580
+Healing: 35,100
+
+Plutarrch (Leader)
+Loot: 165,300
+Supplies: 95,400
+Balance: 69,900
+Damage: 82,400
+Healing: 18,200
+
+Bhaen
+Loot: 120,100
+Supplies: 82,800
+Balance: 37,300
+Damage: 60,180
+Healing: 16,900</code></pre>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Each player's <span class="font-semibold text-text-primary">Balance</span>
+            is what they personally walked away with: loot minus their own
+            supplies. The team total at the top is just the sum.
+          </p>
+        </section>
+
+        <!-- === Step 1: Fair share === -->
+        <section id="step1" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            3. Step 1 — calculate the fair share
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Sum every player's balance, then divide by the number of
+            players:
+          </p>
+
+          <div class="mt-4 rounded border border-border-subtle bg-bg-sunken p-4 font-mono text-[12px] text-text-primary">
+            <p class="text-accent-cyan">
+              perPerson = totalBalance / numberOfPlayers
+            </p>
+          </div>
+
+          <p class="mt-4 text-[13px] leading-relaxed text-text-secondary">
+            In our sample log:
+            <span class="font-mono text-accent-cyan">107,200 / 2 = 53,600 gp</span>.
+            That's what each player
+            <em class="not-italic font-semibold">should</em> end the hunt
+            with after the split is applied.
+          </p>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Critical detail: this is based on
+            <span class="font-semibold text-text-primary">balance</span>, not
+            on loot. The split already accounts for everyone's individual
+            supplies because each player's balance subtracts their own
+            costs. We'll come back to why this matters for knights vs mages.
+          </p>
+        </section>
+
+        <!-- === Step 2: Surplus / deficit === -->
+        <section id="step2" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            4. Step 2 — surplus or deficit per player
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            For each player, compare their actual balance to the fair share:
+          </p>
+
+          <div class="mt-4 rounded border border-border-subtle bg-bg-sunken p-4 font-mono text-[12px] text-text-primary">
+            <p class="text-accent-cyan">
+              diff = playerBalance − perPerson
+            </p>
+          </div>
+
+          <ul class="mt-4 list-disc space-y-2 pl-5 text-[13px] leading-relaxed text-text-secondary">
+            <li>
+              <span class="font-semibold text-text-primary">diff &gt; 0 → surplus.</span>
+              You got more than your fair share. You
+              <span class="font-semibold text-danger">owe</span> the
+              difference to the party.
+            </li>
+            <li>
+              <span class="font-semibold text-text-primary">diff &lt; 0 → deficit.</span>
+              You got less than your fair share. The party
+              <span class="font-semibold text-success">owes you</span> the
+              difference.
+            </li>
+            <li>
+              <span class="font-semibold text-text-primary">diff = 0 → no transfer.</span>
+              You already ended at the fair share.
+            </li>
+          </ul>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            In our example:
+          </p>
+
+          <div class="mt-3 overflow-x-auto">
+            <table class="w-full border-collapse text-[12px]">
+              <thead class="border-b border-border-subtle text-text-tertiary">
+                <tr>
+                  <th class="px-3 py-2 text-left font-medium">Player</th>
+                  <th class="px-3 py-2 text-right font-medium">Balance</th>
+                  <th class="px-3 py-2 text-right font-medium">Fair share</th>
+                  <th class="px-3 py-2 text-right font-medium">Diff</th>
+                  <th class="px-3 py-2 text-left font-medium">Verdict</th>
+                </tr>
+              </thead>
+              <tbody class="text-text-secondary">
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2">Plutarrch</td>
+                  <td class="px-3 py-2 text-right">69,900</td>
+                  <td class="px-3 py-2 text-right">53,600</td>
+                  <td class="px-3 py-2 text-right text-danger">+16,300</td>
+                  <td class="px-3 py-2">Owes</td>
+                </tr>
+                <tr>
+                  <td class="px-3 py-2">Bhaen</td>
+                  <td class="px-3 py-2 text-right">37,300</td>
+                  <td class="px-3 py-2 text-right">53,600</td>
+                  <td class="px-3 py-2 text-right text-success">−16,300</td>
+                  <td class="px-3 py-2">Is owed</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- === Step 3: Settlement === -->
+        <section id="step3" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            5. Step 3 — the settlement
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            For 2 players the settlement is trivial: the one with a surplus
+            transfers their entire surplus to the one with the deficit.
+            Plutarrch pays Bhaen 16,300 gp. Both end up with
+            <span class="font-mono text-accent-cyan">53,600 gp</span>. Done.
+          </p>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            For 3+ players, TibiaPlan uses a
+            <span class="font-semibold text-text-primary">greedy matching</span>
+            strategy: the player with the
+            <em class="not-italic">largest</em> surplus pays the player with
+            the <em class="not-italic">largest</em> deficit first, transferring
+            whichever amount is smaller. Repeat until all surpluses are zero.
+            This produces the
+            <span class="font-semibold text-text-primary">minimum number of transactions</span>
+            possible — usually one fewer than the number of players who
+            owed or were owed.
+          </p>
+        </section>
+
+        <!-- === Worked example === -->
+        <section id="example" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            6. Worked example (2 players)
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Using the sample log from earlier:
+          </p>
+
+          <ol class="mt-3 list-decimal space-y-2 pl-5 text-[13px] leading-relaxed text-text-secondary">
+            <li>
+              Total balance = <span class="font-mono">107,200</span>
+            </li>
+            <li>
+              Fair share per player = <span class="font-mono">107,200 / 2 = 53,600</span>
+            </li>
+            <li>
+              Plutarrch diff = <span class="font-mono">69,900 − 53,600 = +16,300</span>
+              → he owes
+            </li>
+            <li>
+              Bhaen diff = <span class="font-mono">37,300 − 53,600 = −16,300</span>
+              → he is owed
+            </li>
+            <li>
+              <span class="font-semibold text-text-primary">Transfer:</span>
+              Plutarrch sends Bhaen 16,300 gp
+            </li>
+            <li>
+              After settlement, both have effective profit = 53,600 gp
+            </li>
+          </ol>
+
+          <p class="mt-4 text-[13px] leading-relaxed text-text-secondary">
+            The intuition: the hunt as a team made 107,200 gp. Half is
+            53,600 each. Plutarrch happened to find the lucky loot drops, so
+            we shift gp to even things out.
+          </p>
+        </section>
+
+        <!-- === Supplies === -->
+        <section id="supplies" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            7. Why supplies don't matter (directly)
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            A frequent complaint: "I'm a knight, I drank way more potions
+            than the mage. Why doesn't the split account for that?"
+          </p>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            It does — implicitly. Each player's
+            <span class="font-mono">Balance = Loot − Supplies</span>, so
+            their supply cost is
+            <em class="not-italic font-semibold">already subtracted</em>
+            from the number we compare. Worked example:
+          </p>
+
+          <div class="mt-4 overflow-x-auto">
+            <table class="w-full border-collapse text-[12px]">
+              <thead class="border-b border-border-subtle text-text-tertiary">
+                <tr>
+                  <th class="px-3 py-2 text-left font-medium">Player</th>
+                  <th class="px-3 py-2 text-right font-medium">Loot</th>
+                  <th class="px-3 py-2 text-right font-medium">Supplies</th>
+                  <th class="px-3 py-2 text-right font-medium">Balance</th>
+                </tr>
+              </thead>
+              <tbody class="text-text-secondary">
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2">Knight</td>
+                  <td class="px-3 py-2 text-right">200,000</td>
+                  <td class="px-3 py-2 text-right">150,000</td>
+                  <td class="px-3 py-2 text-right font-semibold">50,000</td>
+                </tr>
+                <tr>
+                  <td class="px-3 py-2">Mage</td>
+                  <td class="px-3 py-2 text-right">100,000</td>
+                  <td class="px-3 py-2 text-right">50,000</td>
+                  <td class="px-3 py-2 text-right font-semibold">50,000</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Same balance → no transfer needed. The knight spent 3× more on
+            supplies, but he also looted 2× more — they net out evenly.
+            The split sees this and stays out of the way.
+          </p>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            The split only steps in when supply cost
+            <em class="not-italic font-semibold">and</em> loot luck combine to
+            produce uneven balances. Which is exactly when humans would
+            argue about it anyway.
+          </p>
+        </section>
+
+        <!-- === Net loss === -->
+        <section id="net-loss" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            8. The "I lost money and still owe?" scenario
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Some hunts are a bust. Sample:
+          </p>
+
+          <div class="mt-4 overflow-x-auto">
+            <table class="w-full border-collapse text-[12px]">
+              <thead class="border-b border-border-subtle text-text-tertiary">
+                <tr>
+                  <th class="px-3 py-2 text-left font-medium">Player</th>
+                  <th class="px-3 py-2 text-right font-medium">Balance</th>
+                  <th class="px-3 py-2 text-right font-medium">Fair share</th>
+                  <th class="px-3 py-2 text-right font-medium">Diff</th>
+                  <th class="px-3 py-2 text-left font-medium">Verdict</th>
+                </tr>
+              </thead>
+              <tbody class="text-text-secondary">
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2">Plutarrch</td>
+                  <td class="px-3 py-2 text-right text-danger">−10,000</td>
+                  <td class="px-3 py-2 text-right text-danger">−50,000</td>
+                  <td class="px-3 py-2 text-right text-danger">+40,000</td>
+                  <td class="px-3 py-2">Owes</td>
+                </tr>
+                <tr>
+                  <td class="px-3 py-2">Bhaen</td>
+                  <td class="px-3 py-2 text-right text-danger">−90,000</td>
+                  <td class="px-3 py-2 text-right text-danger">−50,000</td>
+                  <td class="px-3 py-2 text-right text-success">−40,000</td>
+                  <td class="px-3 py-2">Is owed</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Total balance is
+            <span class="font-mono">−100,000</span> — the team lost gold.
+            Fair share is
+            <span class="font-mono">−50,000</span> each. Plutarrch only lost
+            10k, but he's
+            <em class="not-italic font-semibold">supposed</em> to have lost
+            50k. He's
+            <span class="font-mono text-danger">40,000 ahead</span> of his
+            share, so he owes 40,000 gp to Bhaen, who was 40k
+            <em class="not-italic">deeper</em> in the hole than fair.
+          </p>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            After the transfer, both players are at −50,000 — equal loss.
+            That's the principle: split equalizes
+            <em class="not-italic font-semibold">profit and loss alike</em>.
+            Players who came out lighter on the bad hunt cover their share
+            of the damage too.
+          </p>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            This is the counter-intuitive moment for new groups. If you're
+            playing with a friend who's never done a split, show them this
+            section before the first hunt — it pre-empts the awkward "but I
+            already lost money…" conversation.
+          </p>
+        </section>
+
+        <!-- === 3+ players === -->
+        <section id="three" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            9. Three or more players
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            For larger parties the math is the same — divide totalBalance by
+            the player count, compute each player's diff — but multiple
+            transfers may be needed. The settlement minimizes them:
+          </p>
+
+          <div class="mt-4 overflow-x-auto">
+            <table class="w-full border-collapse text-[12px]">
+              <thead class="border-b border-border-subtle text-text-tertiary">
+                <tr>
+                  <th class="px-3 py-2 text-left font-medium">Player</th>
+                  <th class="px-3 py-2 text-right font-medium">Balance</th>
+                  <th class="px-3 py-2 text-right font-medium">Diff vs share (40,000)</th>
+                </tr>
+              </thead>
+              <tbody class="text-text-secondary">
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2">Player A</td>
+                  <td class="px-3 py-2 text-right">80,000</td>
+                  <td class="px-3 py-2 text-right text-danger">+40,000</td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2">Player B</td>
+                  <td class="px-3 py-2 text-right">60,000</td>
+                  <td class="px-3 py-2 text-right text-danger">+20,000</td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2">Player C</td>
+                  <td class="px-3 py-2 text-right">10,000</td>
+                  <td class="px-3 py-2 text-right text-success">−30,000</td>
+                </tr>
+                <tr>
+                  <td class="px-3 py-2">Player D</td>
+                  <td class="px-3 py-2 text-right">10,000</td>
+                  <td class="px-3 py-2 text-right text-success">−30,000</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Greedy settlement: A (largest surplus) pays C (largest deficit)
+            until A is square or C is square, whichever first. Then the
+            algorithm moves to the next pair. Result:
+          </p>
+
+          <ul class="mt-2 list-disc space-y-1 pl-5 text-[13px] leading-relaxed text-text-secondary">
+            <li>A pays C: 30,000 gp (C now square; A has 10,000 surplus left)</li>
+            <li>A pays D: 10,000 gp (A now square; D still owed 20,000)</li>
+            <li>B pays D: 20,000 gp (everyone square)</li>
+          </ul>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Three transfers for four players — the theoretical minimum.
+            Without the greedy algorithm you might end up with five or six
+            transfers, each of which is a manual in-game trade. The
+            calculator keeps the post-hunt admin short.
+          </p>
+        </section>
+
+        <!-- === Objections === -->
+        <section id="objections" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            10. Common objections (and answers)
+          </h2>
+
+          <div class="mt-4 space-y-5 text-[13px] leading-relaxed text-text-secondary">
+            <div>
+              <p class="font-semibold text-text-primary">
+                "I died and lost my AoL, that should count!"
+              </p>
+              <p class="mt-1">
+                It does — your supplies value includes broken items the
+                Hunt Analyzer tracked. If your AoL broke, the gp value is
+                already in your Supplies number. The split sees the right
+                balance.
+              </p>
+            </div>
+
+            <div>
+              <p class="font-semibold text-text-primary">
+                "I was AFK for 10 minutes, I shouldn't get a full share."
+              </p>
+              <p class="mt-1">
+                The Hunt Analyzer can't detect AFK time — it tracks the
+                whole session. If you're in a casual party and want to
+                honour-system someone who was away, agree on a manual
+                adjustment before pasting the log. The calculator splits
+                exactly what the analyzer reports.
+              </p>
+            </div>
+
+            <div>
+              <p class="font-semibold text-text-primary">
+                "The leader picked up most of the loot."
+              </p>
+              <p class="mt-1">
+                Set Loot Type to <span class="font-semibold text-text-primary">"Leader"</span>
+                in the in-game party options. Tibia then deposits all
+                loot into a single bag and the leader manages distribution.
+                The Hunt Analyzer still tracks per-player Loot/Supplies
+                correctly, so the split math is identical.
+              </p>
+            </div>
+
+            <div>
+              <p class="font-semibold text-text-primary">
+                "Decimals — do I have to send 16,302.7 gp?"
+              </p>
+              <p class="mt-1">
+                The calculator rounds each transfer to whole gp at the end
+                (Tibia coins are integers). On rare cases the rounding can
+                leave ±1 gp of drift between players — small enough that
+                nobody cares, large enough that the math is honest.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- === Sources === -->
+        <section class="mt-12 border-t border-border-subtle pt-6">
+          <p class="text-[10px] uppercase tracking-wider text-text-tertiary">
+            Sources
+          </p>
+          <ul class="mt-2 space-y-1 text-[11px] text-text-secondary">
+            <li>
+              <a href="https://tibia.fandom.com/wiki/Party_Hunt_Analyser" target="_blank" rel="noopener noreferrer" class="text-accent-violet hover:underline">
+                TibiaWiki — Party Hunt Analyser
+              </a>
+            </li>
+            <li>
+              <a href="https://tibia.fandom.com/wiki/Loot_Analyser" target="_blank" rel="noopener noreferrer" class="text-accent-violet hover:underline">
+                TibiaWiki — Loot Analyser
+              </a>
+            </li>
+            <li>
+              <a href="https://tibia.fandom.com/wiki/Supply_Analyser" target="_blank" rel="noopener noreferrer" class="text-accent-violet hover:underline">
+                TibiaWiki — Supply Analyser
+              </a>
+            </li>
+          </ul>
+        </section>
+
+        <!-- === CTA === -->
+        <div class="mt-12 rounded-md border border-accent-violet/40 bg-accent-violet/5 p-5 text-center">
+          <p class="text-[11px] uppercase tracking-wider text-accent-violet">
+            Use the calculator
+          </p>
+          <p class="mx-auto mt-2 max-w-md text-[13px] leading-relaxed text-text-secondary">
+            Paste your Hunt Analyzer log into the Loot Split tab and get
+            the settlement instantly. History of the last 15 hunts is
+            saved locally — no account required.
+          </p>
+          <a
+            href="/#loot"
+            class="mt-4 inline-flex items-center gap-2 rounded px-5 py-2 text-[12px] font-medium text-bg-primary transition-opacity hover:opacity-90"
+            style="background: linear-gradient(135deg, #9B8AFB 0%, #5DCAE8 100%);"
+          >
+            Open Loot Split →
+          </a>
+        </div>
+      </article>
+
+      <!-- Desktop sticky sidebar -->
+      <aside class="hidden lg:block">
+        <div class="sticky top-32 space-y-4">
+          <nav class="rounded-md border border-border-subtle bg-bg-surface p-4">
+            <p class="text-[10px] uppercase tracking-wider text-text-tertiary">
+              On this page
+            </p>
+            <ul class="mt-2 space-y-1 text-[12px] text-text-secondary">
+              <li><a href="#what" class="hover:text-accent-violet">What loot split does</a></li>
+              <li><a href="#prices" class="hover:text-accent-violet">1. Where the prices come from</a></li>
+              <li><a href="#analyzer" class="hover:text-accent-violet">2. The Hunt Analyzer log</a></li>
+              <li><a href="#step1" class="hover:text-accent-violet">3. Fair share</a></li>
+              <li><a href="#step2" class="hover:text-accent-violet">4. Surplus or deficit</a></li>
+              <li><a href="#step3" class="hover:text-accent-violet">5. The settlement</a></li>
+              <li><a href="#example" class="hover:text-accent-violet">6. Worked example</a></li>
+              <li><a href="#supplies" class="hover:text-accent-violet">7. Why supplies don't matter</a></li>
+              <li><a href="#net-loss" class="hover:text-accent-violet">8. Net-loss hunts</a></li>
+              <li><a href="#three" class="hover:text-accent-violet">9. Three+ players</a></li>
+              <li><a href="#objections" class="hover:text-accent-violet">10. Common objections</a></li>
+            </ul>
+          </nav>
+
+          <div class="rounded-md border border-accent-violet/40 bg-accent-violet/5 p-4 text-center">
+            <p class="text-[10px] uppercase tracking-wider text-accent-violet">
+              Loot Split
+            </p>
+            <p class="mx-auto mt-2 text-[12px] leading-relaxed text-text-secondary">
+              Paste your Hunt Analyzer log, get the settlement instantly.
+            </p>
+            <a
+              href="/#loot"
+              class="mt-3 inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-[11px] font-medium text-bg-primary transition-opacity hover:opacity-90"
+              style="background: linear-gradient(135deg, #9B8AFB 0%, #5DCAE8 100%);"
+            >
+              Open it →
+            </a>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="mt-8 flex justify-center gap-3">
+      <a
+        href="/guides"
+        class="rounded border border-border-subtle bg-bg-sunken px-4 py-2 text-[12px] text-text-secondary transition-colors hover:border-border-emphasis hover:text-text-primary"
+      >
+        ← All guides
+      </a>
+      <a
+        href="/"
+        class="rounded border border-border-subtle bg-bg-sunken px-4 py-2 text-[12px] text-text-secondary transition-colors hover:border-border-emphasis hover:text-text-primary"
+      >
+        ← Back to TibiaPlan
+      </a>
+    </div>
+  </main>
+
+  <Footer />
+</Layout>

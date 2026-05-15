@@ -31,21 +31,96 @@ import RashidLocation from "./RashidLocation.astro";
   </a>
 
   <!--
-    Row 1: left = brand text (and the small logo on mobile); right = nav.
+    Row 1: left = hamburger + brand text (and the small logo on mobile);
+    right = nav.
   -->
   <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
-    <a href="/" class="flex items-center gap-2 no-underline">
-      <img
-        src="/TibiaPlanLogo.png"
-        alt=""
-        width="32"
-        height="32"
-        class="h-8 w-8 md:hidden"
-        loading="eager"
-        decoding="async"
-      />
-      <span class="text-[14px] font-medium tracking-wide text-text-primary">TibiaPlan</span>
-    </a>
+    <div
+      x-data="{ open: false }"
+      @keydown.escape.window="open = false"
+      class="relative flex items-center gap-3"
+    >
+      <!--
+        Hamburger menu. Click toggles the dropdown; the dropdown closes
+        on Escape, on outside click, and on link click.
+      -->
+      <button
+        type="button"
+        @click="open = !open"
+        :aria-expanded="open"
+        aria-label="Open menu"
+        aria-controls="primary-menu"
+        class="grid h-8 w-8 place-items-center rounded border border-border-subtle bg-bg-sunken text-text-secondary transition-colors hover:border-border-emphasis hover:text-text-primary"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="h-4 w-4"
+          aria-hidden="true"
+        >
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <line x1="3" y1="12" x2="21" y2="12" />
+          <line x1="3" y1="18" x2="21" y2="18" />
+        </svg>
+      </button>
+
+      <a href="/" class="flex items-center gap-2 no-underline">
+        <img
+          src="/TibiaPlanLogo.png"
+          alt=""
+          width="32"
+          height="32"
+          class="h-8 w-8 md:hidden"
+          loading="eager"
+          decoding="async"
+        />
+        <span class="text-[14px] font-medium tracking-wide text-text-primary">TibiaPlan</span>
+      </a>
+
+      <!-- Dropdown menu — positioned absolute directly under the hamburger. -->
+      <div
+        id="primary-menu"
+        x-show="open"
+        x-cloak
+        x-transition.origin.top.left
+        @click.outside="open = false"
+        class="absolute left-0 top-full z-30 mt-2 w-56 rounded-md border border-border-subtle bg-bg-surface p-1 shadow-lg shadow-black/40"
+      >
+        <a
+          href="/"
+          @click="open = false"
+          class="block rounded px-3 py-2 text-[12px] text-text-secondary transition-colors hover:bg-bg-sunken hover:text-text-primary"
+        >
+          Main Page
+        </a>
+        <a
+          href="/guides"
+          @click="open = false"
+          class="block rounded px-3 py-2 text-[12px] text-text-secondary transition-colors hover:bg-bg-sunken hover:text-text-primary"
+        >
+          Guides
+        </a>
+        <span
+          class="tooltip-host relative block cursor-not-allowed rounded px-3 py-2 text-[12px] text-text-tertiary"
+          title="Coming soon"
+        >
+          Destiny Wheel
+          <span class="ml-1 text-[9px] uppercase tracking-wider text-text-tertiary/60">soon</span>
+        </span>
+        <a
+          href="/advertise"
+          @click="open = false"
+          class="block rounded px-3 py-2 text-[12px] text-text-secondary transition-colors hover:bg-bg-sunken hover:text-text-primary"
+        >
+          Advertise
+        </a>
+      </div>
+    </div>
 
     <nav class="flex items-center gap-2 text-[11px]">
       <button

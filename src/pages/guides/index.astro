@@ -1,0 +1,86 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import Header from "../../components/Header.astro";
+import Footer from "../../components/Footer.astro";
+
+const guides = [
+  {
+    slug: "tibia-death-penalty",
+    title: "Tibia Death Penalty Guide",
+    summary:
+      "Exact EXP loss formulas, blessing math, skull penalties, item drop chances, and unfair-fight reduction. Plus the interactive Death Simulator on the home page so you can plug in your own numbers.",
+    readingMinutes: 9,
+  },
+  {
+    slug: "tibia-loot-split",
+    title: "Tibia Loot Split Math Explained",
+    summary:
+      "Why the Loot Split calculator tells you to pay your friend after a profitable hunt — and the counter-intuitive scenario where you lose money and still owe. Step-by-step worked examples for 2, 3, and 4 players.",
+    readingMinutes: 7,
+  },
+];
+---
+
+<Layout
+  title="Tibia Guides - TibiaPlan"
+  description="Free, in-depth Tibia guides. Death penalty math, blessing strategy, training optimisation, imbuements, and more — built by players, calculator-backed."
+  keywords={["tibia guide", "tibia guides", "tibia tutorial", "tibia tips"]}
+>
+  <Header />
+
+  <main class="mx-auto max-w-3xl px-4 py-12">
+    <header class="text-center">
+      <p class="text-[10px] uppercase tracking-[0.2em] text-accent-violet">Guides</p>
+      <h1 class="mt-2 text-[28px] font-medium tracking-wide text-text-primary">
+        TibiaPlan Guides
+      </h1>
+      <p class="mx-auto mt-3 max-w-xl text-[13px] leading-relaxed text-text-secondary">
+        Deep-dives into Tibia mechanics, written next to the calculators
+        that actually compute them. No fluff, no SEO filler — every guide
+        is something we'd want to read ourselves.
+      </p>
+    </header>
+
+    <ul class="mt-10 space-y-4">
+      {guides.map((g) => (
+        <li>
+          <a
+            href={`/guides/${g.slug}`}
+            class="block rounded-md border border-border-subtle bg-bg-surface p-5 transition-colors hover:border-accent-violet/60 hover:bg-bg-sunken"
+          >
+            <h2 class="text-[16px] font-medium text-text-primary">
+              {g.title}
+            </h2>
+            <p class="mt-1 text-[12px] leading-relaxed text-text-secondary">
+              {g.summary}
+            </p>
+            <p class="mt-3 text-[10px] uppercase tracking-wider text-text-tertiary">
+              {g.readingMinutes} min read
+            </p>
+          </a>
+        </li>
+      ))}
+    </ul>
+
+    <div class="mt-10 rounded-md border border-dashed border-border-subtle bg-bg-sunken p-6 text-center">
+      <p class="text-[10px] uppercase tracking-wider text-text-tertiary">
+        More coming
+      </p>
+      <p class="mt-2 text-[12px] leading-relaxed text-text-secondary">
+        We add a new guide whenever we have something genuinely worth
+        writing about. No content treadmill.
+      </p>
+    </div>
+
+    <div class="mt-8 flex justify-center">
+      <a
+        href="/"
+        class="rounded border border-border-subtle bg-bg-sunken px-4 py-2 text-[12px] text-text-secondary transition-colors hover:border-border-emphasis hover:text-text-primary"
+      >
+        ← Back to TibiaPlan
+      </a>
+    </div>
+  </main>
+
+  <Footer />
+</Layout>
