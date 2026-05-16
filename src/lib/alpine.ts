@@ -6,6 +6,7 @@ import { dromeTimer } from "./dromeTimer";
 import { imbuementsTab } from "./imbuementsTab";
 import { lootTab } from "./lootTab";
 import { nextChangeCountdown } from "./nextChangeCountdown";
+import { offlineTrainingTab } from "./offlineTrainingTab";
 import { rashidLocation } from "./rashidLocation";
 import { tabsControl } from "./tabsControl";
 import { trainingTab } from "./trainingTab";
@@ -18,6 +19,7 @@ declare global {
 
 Alpine.data("characterSheet", characterSheet);
 Alpine.data("trainingTab", trainingTab);
+Alpine.data("offlineTrainingTab", offlineTrainingTab);
 Alpine.data("lootTab", lootTab);
 Alpine.data("imbuementsTab", imbuementsTab);
 Alpine.data("tabsControl", tabsControl);

@@ -6,6 +6,7 @@ import Footer from "../components/Footer.astro";
 import AdSlot from "../components/AdSlot.astro";
 import CharacterSheet from "../components/CharacterSheet.astro";
 import TrainingTab from "../components/tabs/TrainingTab.astro";
+import OfflineTrainingTab from "../components/tabs/OfflineTrainingTab.astro";
 import LootSplitTab from "../components/tabs/LootSplitTab.astro";
 import ImbuementsTab from "../components/tabs/ImbuementsTab.astro";
 import CharacterSearchTab from "../components/tabs/CharacterSearchTab.astro";
@@ -155,8 +156,66 @@ const structuredData = {
             </nav>
 
             <div class="mt-4">
-              <div x-show="active === 'training'" x-cloak>
-                <TrainingTab />
+              <!--
+                Training tab now has two sub-tabs inside a single card:
+                Exercise Weapons (original calc) and Offline Training (new,
+                Phase 1 UI shell). Tab bar lives in the card header with a
+                bottom divider; the active tab gets a violet underline +
+                bold text. Sub-tab state is local Alpine — short-lived, no
+                persistence. Lift to tabsControl later if needed.
+              -->
+              <div
+                x-show="active === 'training'"
+                x-cloak
+                x-data="{ trainingSub: 'exercise' }"
+                class="overflow-hidden rounded-md border border-border-subtle bg-bg-surface"
+              >
+                <nav
+                  class="flex border-b border-border-subtle"
+                  aria-label="Training type"
+                >
+                  <button
+                    type="button"
+                    @click="trainingSub = 'exercise'"
+                    class="flex flex-1 items-center justify-center gap-2 px-5 py-3 text-[12px] font-medium transition-colors"
+                    :class="trainingSub === 'exercise' ? 'bg-accent-violet text-bg-primary' : 'text-text-secondary hover:bg-bg-sunken hover:text-text-primary'"
+                  >
+                    <img
+                      src="/sprites/tabs/exercise-weapon.gif"
+                      alt=""
+                      class="h-7 w-7 object-contain"
+                      loading="lazy"
+                      decoding="async"
+                      onerror="this.style.display='none'"
+                    />
+                    <span>Exercise Weapons</span>
+                  </button>
+                  <button
+                    type="button"
+                    @click="trainingSub = 'offline'"
+                    class="flex flex-1 items-center justify-center gap-2 border-l border-border-subtle px-5 py-3 text-[12px] font-medium transition-colors"
+                    :class="trainingSub === 'offline' ? 'bg-accent-violet text-bg-primary' : 'text-text-secondary hover:bg-bg-sunken hover:text-text-primary'"
+                  >
+                    <img
+                      src="/sprites/tabs/skill-trainer.gif"
+                      alt=""
+                      class="h-7 w-7 object-contain"
+                      loading="lazy"
+                      decoding="async"
+                      onerror="this.style.display='none'"
+                    />
+                    <span>Offline Training</span>
+                  </button>
+                </nav>
+
+                <div class="p-6">
+                  <div x-show="trainingSub === 'exercise'" x-cloak>
+                    <TrainingTab />
+                  </div>
+                  <div x-show="trainingSub === 'offline'" x-cloak>
+                    <OfflineTrainingTab />
+                  </div>
+                </div>
               </div>
 
               <div x-show="active === 'loot'" x-cloak>

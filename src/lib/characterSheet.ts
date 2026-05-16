@@ -63,6 +63,12 @@ interface PersistedCharacter {
    * across simulations. Only used by the post-death skill-loss expansion.
    */
   pctToNextBySkill: Record<string, number | null>;
+  /**
+   * Current stamina as a raw "HH:MM" string typed by the user. Capped at
+   * 42:00 (the in-game maximum). The mini-calc below the blessings reads
+   * this and outputs offline-time-to-max.
+   */
+  staminaInput: string;
 }
 
 function defaults(): PersistedCharacter {
@@ -77,6 +83,7 @@ function defaults(): PersistedCharacter {
     showAllSkills: false,
     adventurersLost: false,
     pctToNextBySkill: {},
+    staminaInput: "",
   };
 }
 
@@ -178,6 +185,7 @@ export function characterSheet() {
         showAllSkills: this.showAllSkills,
         adventurersLost: this.adventurersLost,
         pctToNextBySkill: { ...this.pctToNextBySkill },
+        staminaInput: this.staminaInput,
       };
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
@@ -452,6 +460,104 @@ export function characterSheet() {
     fmtPct(pct: number): string {
       if (!Number.isFinite(pct)) return "0.00";
       return Math.min(99.99, Math.max(0, pct)).toFixed(2);
+    },
+
+    // ---- Stamina mini-calc -------------------------------------------------
+
+    /**
+     * Parse the user's "HH:MM" input into a clamped total of minutes.
+     * Returns null when the input is empty or invalid. Caps at 42:00 (the
+     * in-game maximum) and clamps minutes to 0–59.
+     */
+    parseStamina(raw: string): number | null {
+      const trimmed = (raw ?? "").trim();
+      if (!trimmed) return null;
+      // Accept "HH:MM" or just "HH". Reject anything else cleanly.
+      const m = trimmed.match(/^(\d{1,2})(?::(\d{1,2}))?$/);
+      if (!m) return null;
+      const hours = Math.max(0, Math.min(42, parseInt(m[1], 10) || 0));
+      const minutes = Math.max(0, Math.min(59, parseInt(m[2] ?? "0", 10) || 0));
+      // 42:01..42:59 collapses to exactly 42:00 — there's no stamina above 42h.
+      if (hours === 42) return 42 * 60;
+      return hours * 60 + minutes;
+    },
+
+    /**
+     * Offline minutes needed to refill from `currentMinutes` to 42:00.
+     * Regen ratios per TibiaWiki Stamina:
+     *   below 39:00 (white)      → 3 min offline = 1 min stamina
+     *   39:00–42:00 (green/bonus) → 6 min offline = 1 min stamina
+     * Stamina only starts regenerating after the character has been
+     * logged off for an initial 10-minute window, so that delay is added
+     * to the result whenever any regen is needed at all.
+     *
+     * Sanity check (wiki example): 39:00 → 42:00 = 3h of green = 180 × 6
+     * = 1080 min + 10 min initial = 1090 min = 18h 10m. ✓
+     */
+    offlineMinutesToFull(currentMinutes: number): number {
+      const MAX = 42 * 60;
+      const GREEN_START = 39 * 60;
+      const INITIAL_DELAY = 10;
+      if (currentMinutes >= MAX) return 0;
+      let regen: number;
+      if (currentMinutes >= GREEN_START) {
+        regen = (MAX - currentMinutes) * 6;
+      } else {
+        const whiteOffline = (GREEN_START - currentMinutes) * 3;
+        const greenOffline = (MAX - GREEN_START) * 6; // always 180 × 6 = 1080
+        regen = whiteOffline + greenOffline;
+      }
+      return regen + INITIAL_DELAY;
+    },
+
+    /** Human-readable "Xd Yh Zm" formatter for offline-time-to-full. */
+    formatOfflineTime(minutes: number): string {
+      if (minutes <= 0) return "Already at 42:00";
+      const days = Math.floor(minutes / (24 * 60));
+      const hours = Math.floor((minutes % (24 * 60)) / 60);
+      const mins = minutes % 60;
+      const parts: string[] = [];
+      if (days) parts.push(`${days}d`);
+      if (hours || days) parts.push(`${hours}h`);
+      parts.push(`${mins}m`);
+      return parts.join(" ");
+    },
+
+    /** Reactive: the time-to-42 string the template binds to. */
+    get staminaTimeToMax(): string {
+      const cur = this.parseStamina(this.staminaInput);
+      if (cur == null) return "";
+      return this.formatOfflineTime(this.offlineMinutesToFull(cur));
+    },
+
+    /**
+     * Auto-formatter for the stamina input. Strips non-digits, caps at
+     * 4 digits, and auto-inserts the ":" after the second digit so the
+     * user can type "4159" and see "41:59". Clamping to valid in-game
+     * ranges (≤42:00) happens on blur in onStaminaChange().
+     */
+    formatStaminaInput(raw: string): string {
+      const digits = (raw ?? "").replace(/\D/g, "").slice(0, 4);
+      if (digits.length === 0) return "";
+      if (digits.length <= 2) return digits;
+      return `${digits.slice(0, 2)}:${digits.slice(2)}`;
+    },
+
+    /**
+     * Called on blur / Enter — clamps the input to a valid HH:MM in the
+     * 00:00–42:00 range and normalises display (zero-pads). Saves so the
+     * value survives page reloads.
+     */
+    onStaminaChange() {
+      const parsed = this.parseStamina(this.staminaInput);
+      if (parsed == null) {
+        this.staminaInput = "";
+      } else {
+        const hh = Math.floor(parsed / 60);
+        const mm = parsed % 60;
+        this.staminaInput = `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+      }
+      this.save();
     },
 
     simulateDeath() {

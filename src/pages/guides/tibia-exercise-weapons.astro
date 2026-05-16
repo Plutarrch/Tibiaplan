@@ -1,0 +1,590 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import Header from "../../components/Header.astro";
+import Footer from "../../components/Footer.astro";
+
+const PUBLISHED = "2026-05-16";
+const MODIFIED = "2026-05-16";
+const URL = "https://tibiaplan.com/guides/tibia-exercise-weapons";
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  headline: "Tibia Exercise Weapons: Charges, Hits, Mana, Blocks",
+  description:
+    "Quick reference: what one charge of each exercise weapon actually does (hits, mana, blocks). Plus total counts for Regular, Durable, and Lasting variants.",
+  datePublished: PUBLISHED,
+  dateModified: MODIFIED,
+  author: { "@type": "Organization", name: "TibiaPlan" },
+  publisher: {
+    "@type": "Organization",
+    name: "TibiaPlan",
+    url: "https://tibiaplan.com",
+  },
+  mainEntityOfPage: { "@type": "WebPage", "@id": URL },
+  url: URL,
+};
+---
+
+<Layout
+  title="Tibia Exercise Weapons: Charges, Hits, Mana, Blocks - TibiaPlan"
+  description="Quick reference: what one charge of each exercise weapon actually does (hits, mana, blocks). Totals for Regular, Durable, and Lasting variants."
+  keywords={[
+    "tibia exercise weapons",
+    "exercise weapon charges",
+    "durable exercise weapon",
+    "lasting exercise weapon",
+    "tibia training calculator",
+  ]}
+  structuredData={structuredData}
+>
+  <Header />
+
+  <main class="mx-auto max-w-7xl px-4 py-10">
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
+      <article class="rounded-md border border-border-subtle bg-bg-surface p-6 sm:p-10">
+        <header>
+          <p class="text-[10px] uppercase tracking-[0.2em] text-accent-violet">
+            Guide · Training
+          </p>
+          <h1 class="mt-2 text-[26px] font-medium leading-tight tracking-wide text-text-primary sm:text-[30px]">
+            Tibia Exercise Weapons: Charges, Hits, Mana, Blocks
+          </h1>
+          <p class="mt-3 text-[10px] uppercase tracking-wider text-text-tertiary">
+            4 min read · Updated May 2026
+          </p>
+          <p class="mt-4 text-[13px] leading-relaxed text-text-secondary">
+            A short reference for what one charge of an exercise weapon
+            actually does in the game, plus totals for the three sizes
+            (Regular, Durable, Lasting). If you want to know how many of
+            them you need to reach a target skill, use the
+            <a href="/" class="text-accent-violet hover:underline">Training Calculator</a> —
+            this page is the underlying mechanic the calculator builds on.
+          </p>
+        </header>
+
+        <!-- Mobile-only TOC -->
+        <nav class="mt-8 rounded-md border border-border-subtle bg-bg-sunken p-4 lg:hidden">
+          <p class="text-[10px] uppercase tracking-wider text-text-tertiary">
+            On this page
+          </p>
+          <ul class="mt-2 space-y-1 text-[12px] text-text-secondary">
+            <li><a href="#sizes" class="hover:text-accent-violet">1. The three sizes</a></li>
+            <li><a href="#per-charge" class="hover:text-accent-violet">2. What one charge does</a></li>
+            <li><a href="#totals" class="hover:text-accent-violet">3. Totals per weapon</a></li>
+            <li><a href="#bonuses" class="hover:text-accent-violet">4. Bonuses that stack on top</a></li>
+            <li><a href="#why-distance" class="hover:text-accent-violet">5. Distance &amp; shielding rates</a></li>
+            <li><a href="#training-weapons" class="hover:text-accent-violet">Footnote: free Training Weapons</a></li>
+          </ul>
+        </nav>
+
+        <!-- === Section 1: Sizes === -->
+        <section id="sizes" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            1. The three sizes
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Every exercise weapon comes in three variants. They all do the
+            <em class="not-italic">same thing per charge</em> — the only
+            differences are total charges, total use time, and price.
+          </p>
+
+          <div class="mt-4 overflow-x-auto">
+            <table class="w-full border-collapse text-[12px]">
+              <thead class="border-b border-border-subtle text-text-tertiary">
+                <tr>
+                  <th class="px-3 py-2 text-left font-medium">Variant</th>
+                  <th class="px-3 py-2 text-right font-medium">Charges</th>
+                  <th class="px-3 py-2 text-right font-medium">Use time</th>
+                  <th class="px-3 py-2 text-right font-medium">Store price</th>
+                  <th class="px-3 py-2 text-right font-medium">NPC price</th>
+                </tr>
+              </thead>
+              <tbody class="text-text-secondary">
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 font-semibold text-text-primary">Regular</td>
+                  <td class="px-3 py-2 text-right">500</td>
+                  <td class="px-3 py-2 text-right">16 m 40 s</td>
+                  <td class="px-3 py-2 text-right">25 TC</td>
+                  <td class="px-3 py-2 text-right">347,222 gp</td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 font-semibold text-text-primary">Durable</td>
+                  <td class="px-3 py-2 text-right">1,800</td>
+                  <td class="px-3 py-2 text-right">1 hour</td>
+                  <td class="px-3 py-2 text-right">90 TC</td>
+                  <td class="px-3 py-2 text-right">1,250,000 gp</td>
+                </tr>
+                <tr>
+                  <td class="px-3 py-2 font-semibold text-text-primary">Lasting</td>
+                  <td class="px-3 py-2 text-right">14,400</td>
+                  <td class="px-3 py-2 text-right">8 hours</td>
+                  <td class="px-3 py-2 text-right">720 TC</td>
+                  <td class="px-3 py-2 text-right">10,000,000 gp</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            One charge takes
+            <span class="font-semibold text-text-primary">2 seconds</span>
+            of in-game time to consume. That's why Regular = 500 × 2 = 1,000
+            seconds = 16 m 40 s, Durable = 1 hour, Lasting = 8 hours.
+            Lasting is exactly 8× Durable in everything — there is no rate
+            bonus for the bigger box.
+          </p>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Picking which size to buy is a money question, not a training
+            question. The
+            <a href="/" class="text-accent-violet hover:underline">Training Calculator</a>
+            shows you the cheapest mix in TC or gp.
+          </p>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            <span class="font-semibold text-text-primary">Where to buy:</span>
+            Magic Shop and Equipment NPCs in major cities (Thais, Carlin,
+            Edron, Venore, Kazordoon, Yalahar, and many more), or directly
+            from a Hireling — the Hireling's Trader job is
+            <em class="not-italic">not</em> required to sell exercise
+            weapons, so any hireling will do. The
+            <span class="font-semibold text-text-primary">TC ↔ gp break-even</span>
+            point per TibiaWiki: above
+            <span class="font-mono text-accent-cyan">13,889 gp</span> per
+            Tibia Coin, it's cheaper to buy with in-game gold; below that,
+            buy with TC.
+          </p>
+        </section>
+
+        <!-- === Section 2: Per charge === -->
+        <section id="per-charge" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            2. What one charge actually does
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            This is the part most players never see written down. Per
+            charge, depending on the type of exercise weapon:
+          </p>
+
+          <div class="mt-4 overflow-x-auto">
+            <table class="w-full border-collapse text-[12px]">
+              <thead class="border-b border-border-subtle text-text-tertiary">
+                <tr>
+                  <th class="px-3 py-2 text-left font-medium">Type</th>
+                  <th class="px-3 py-2 text-left font-medium">In-game weapon names</th>
+                  <th class="px-3 py-2 text-left font-medium">1 charge equals</th>
+                </tr>
+              </thead>
+              <tbody class="text-text-secondary">
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 font-semibold text-text-primary">Melee</td>
+                  <td class="px-3 py-2">Exercise Sword · Axe · Club · Wraps (Fist)</td>
+                  <td class="px-3 py-2"><span class="font-semibold text-accent-cyan">7.2 hits</span></td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 font-semibold text-text-primary">Distance</td>
+                  <td class="px-3 py-2">Exercise Bow</td>
+                  <td class="px-3 py-2"><span class="font-semibold text-accent-cyan">4.32 hits</span> (60% of melee — see <a href="#why-distance" class="text-accent-violet hover:underline">below</a>)</td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 font-semibold text-text-primary">Magic</td>
+                  <td class="px-3 py-2">Exercise Wand · Rod</td>
+                  <td class="px-3 py-2"><span class="font-semibold text-accent-cyan">600 mana burned</span></td>
+                </tr>
+                <tr>
+                  <td class="px-3 py-2 font-semibold text-text-primary">Shielding</td>
+                  <td class="px-3 py-2">Exercise Shield</td>
+                  <td class="px-3 py-2"><span class="font-semibold text-accent-cyan">14.4 blocks</span> (double of melee — a shield blocks the two adjacent attackers per cycle)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            "Hits", "blocks", and "burned mana" are how Tibia counts
+            skill-training attempts internally — the more of them you
+            accumulate, the closer you get to the next skill level. Higher
+            skill levels need exponentially more attempts to advance, which
+            is why a sword going 80 → 81 costs nothing compared to 120 →
+            121.
+          </p>
+        </section>
+
+        <!-- === Section 3: Totals === -->
+        <section id="totals" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            3. Totals per weapon
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Multiply per-charge × charges and you get what a single weapon
+            delivers from full to empty:
+          </p>
+
+          <div class="mt-4 overflow-x-auto">
+            <table class="w-full border-collapse text-[12px]">
+              <thead class="border-b border-border-subtle text-text-tertiary">
+                <tr>
+                  <th class="px-3 py-2 text-left font-medium">Variant</th>
+                  <th class="px-3 py-2 text-right font-medium">Melee hits</th>
+                  <th class="px-3 py-2 text-right font-medium">Distance hits</th>
+                  <th class="px-3 py-2 text-right font-medium">Mana burned</th>
+                  <th class="px-3 py-2 text-right font-medium">Blocks</th>
+                </tr>
+              </thead>
+              <tbody class="text-text-secondary">
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 font-semibold text-text-primary">Regular</td>
+                  <td class="px-3 py-2 text-right">3,600</td>
+                  <td class="px-3 py-2 text-right">2,160</td>
+                  <td class="px-3 py-2 text-right">300,000</td>
+                  <td class="px-3 py-2 text-right">7,200</td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 font-semibold text-text-primary">Durable</td>
+                  <td class="px-3 py-2 text-right">12,960</td>
+                  <td class="px-3 py-2 text-right">7,776</td>
+                  <td class="px-3 py-2 text-right">1,080,000</td>
+                  <td class="px-3 py-2 text-right">25,920</td>
+                </tr>
+                <tr>
+                  <td class="px-3 py-2 font-semibold text-text-primary">Lasting</td>
+                  <td class="px-3 py-2 text-right">103,680</td>
+                  <td class="px-3 py-2 text-right">62,208</td>
+                  <td class="px-3 py-2 text-right">8,640,000</td>
+                  <td class="px-3 py-2 text-right">207,360</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            A single Lasting Exercise Sword delivers
+            <span class="font-semibold text-text-primary">103,680 hits</span>
+            — and the next table shows how long it would take to grind that
+            many hits without exercise weapons. That's the real appeal of
+            Lasting: 8 real hours of weapon use, but the skill output of
+            multiple <em class="not-italic">days</em> of regular training.
+          </p>
+
+          <h3 class="mt-6 text-[14px] font-medium text-text-primary">
+            Equivalent regular-training time
+          </h3>
+          <p class="mt-2 text-[13px] leading-relaxed text-text-secondary">
+            How long you'd need to spend on standard online training to
+            collect the same number of hits / mana / blocks an exercise
+            weapon delivers:
+          </p>
+
+          <div class="mt-3 overflow-x-auto">
+            <table class="w-full border-collapse text-[12px]">
+              <thead class="border-b border-border-subtle text-text-tertiary">
+                <tr>
+                  <th class="px-3 py-2 text-left font-medium">Variant</th>
+                  <th class="px-3 py-2 text-right font-medium">Melee</th>
+                  <th class="px-3 py-2 text-right font-medium">Distance</th>
+                  <th class="px-3 py-2 text-right font-medium">Magic</th>
+                  <th class="px-3 py-2 text-right font-medium">Shielding</th>
+                </tr>
+              </thead>
+              <tbody class="text-text-secondary">
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 font-semibold text-text-primary">Regular</td>
+                  <td class="px-3 py-2 text-right">2 h</td>
+                  <td class="px-3 py-2 text-right">36 m</td>
+                  <td class="px-3 py-2 text-right">1 d 17 h 40 m</td>
+                  <td class="px-3 py-2 text-right">2 h</td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 font-semibold text-text-primary">Durable</td>
+                  <td class="px-3 py-2 text-right">7 h 12 m</td>
+                  <td class="px-3 py-2 text-right">2 h 10 m</td>
+                  <td class="px-3 py-2 text-right">6 d 6 h</td>
+                  <td class="px-3 py-2 text-right">7 h 12 m</td>
+                </tr>
+                <tr>
+                  <td class="px-3 py-2 font-semibold text-text-primary">Lasting</td>
+                  <td class="px-3 py-2 text-right">2 d 9 h 36 m</td>
+                  <td class="px-3 py-2 text-right">17 h 17 m</td>
+                  <td class="px-3 py-2 text-right">50 d</td>
+                  <td class="px-3 py-2 text-right">2 d 9 h 36 m</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="mt-4 text-[11px] leading-relaxed text-text-tertiary">
+            <span class="font-semibold text-text-secondary">What "equivalent" means here.</span>
+            The TibiaWiki figures assume a specific reference setup per
+            type. Reaching those times on your own character requires the
+            same conditions:
+          </p>
+          <ul class="mt-2 list-disc space-y-1 pl-5 text-[11px] leading-relaxed text-text-tertiary">
+            <li>
+              <span class="font-semibold text-text-secondary">Melee:</span>
+              hitting a target continuously (no missed turns) for the full
+              duration.
+            </li>
+            <li>
+              <span class="font-semibold text-text-secondary">Distance:</span>
+              100% "blood hits" — every shot has to land and damage a valid
+              target. If your character misses the shot (it happens
+              automatically, you don't aim manually), that swing doesn't
+              count toward the equivalent time.
+            </li>
+            <li>
+              <span class="font-semibold text-text-secondary">Magic:</span>
+              mana-sitting as a sorcerer or druid
+              <em class="not-italic">with</em> promotion and the doubled
+              mana-regeneration bonus from the 6th streak of the daily
+              reward, in a resting area (4 mp every 2 seconds). Slower
+              regen = longer equivalent time.
+            </li>
+            <li>
+              <span class="font-semibold text-text-secondary">Shielding:</span>
+              actively blocking
+              <em class="not-italic">two</em> monsters the whole time. With
+              one attacker the equivalent time doubles.
+            </li>
+          </ul>
+          <p class="mt-2 text-[11px] leading-relaxed text-text-tertiary">
+            In other words: these numbers are best-case for the alternative.
+            Real-world online training is usually slower, which makes
+            exercise weapons even more attractive.
+          </p>
+        </section>
+
+        <!-- === Section 4: Bonuses === -->
+        <section id="bonuses" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            4. Bonuses that stack on top
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Three modifiers multiply what each charge gives you. The
+            Training Calculator on the home page applies all of them when
+            you check the relevant box:
+          </p>
+
+          <ul class="mt-3 list-disc space-y-2 pl-5 text-[13px] leading-relaxed text-text-secondary">
+            <li>
+              <span class="font-semibold text-text-primary">Private Exercise Dummy</span>
+              — placed in your house. Gives
+              <span class="font-semibold text-text-primary">+10% per charge</span>
+              over public dummies. So one Regular Sword on a private dummy
+              behaves like 3,960 hits instead of 3,600.
+            </li>
+            <li>
+              <span class="font-semibold text-text-primary">Double Exp / Skill Event</span>
+              — CipSoft activates this several times per year. While
+              active, all training and exp gains are
+              <span class="font-semibold text-text-primary">×2</span>.
+              Lasting weapons during the event are objectively the best
+              gp-to-skill conversion in the game.
+            </li>
+            <li>
+              <span class="font-semibold text-text-primary">Loyalty bonus</span>
+              — Premium account time accumulates a percentage bonus to
+              skill gain (up to 50% for very old accounts). Applies to
+              exercise weapons the same as regular training.
+            </li>
+          </ul>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            All three stack multiplicatively. A character with full loyalty
+            (×1.50) on a private dummy (×1.10) during a Double Exp event
+            (×2.00) gets
+            <span class="font-mono text-accent-cyan">1.5 × 1.10 × 2 = 3.30×</span>
+            their normal output per charge.
+          </p>
+        </section>
+
+        <!-- === Section 5: Distance / Shield rates === -->
+        <section id="why-distance" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            5. Why distance trains slower and shielding trains faster
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            The two non-melee melee-equivalents have their own per-charge
+            rates that the table above hides behind a single number:
+          </p>
+
+          <ul class="mt-3 list-disc space-y-2 pl-5 text-[13px] leading-relaxed text-text-secondary">
+            <li>
+              <span class="font-semibold text-text-primary">Exercise Bow → 4.32 hits per charge.</span>
+              That's 60% of the melee rate. CipSoft hasn't published a
+              formal reason, but the practical effect is that paladins
+              training distance with exercise weapons need
+              <em class="not-italic">more</em> weapons (or more time) than
+              a knight to reach the same skill level at the same gp cost.
+            </li>
+            <li>
+              <span class="font-semibold text-text-primary">Exercise Shield → 14.4 blocks per charge.</span>
+              That's double the melee rate. The reason: a shield can block
+              attacks from
+              <em class="not-italic">two</em> adjacent attackers per cycle,
+              so each charge counts both block attempts. This makes
+              Shielding the cheapest skill to raise per charge in the
+              game.
+            </li>
+          </ul>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            For paladins specifically, the lower distance rate is one of
+            several reasons offline training is often preferable for raw
+            distance gain — the relative cost flips. The
+            <a href="/" class="text-accent-violet hover:underline">Training Calculator's Smart Mix</a>
+            already accounts for the correct per-charge rates when you
+            pick Distance.
+          </p>
+        </section>
+
+        <!-- === Aside: Free training weapons === -->
+        <section id="training-weapons" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            Footnote: free Training Weapons
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Tibia also has
+            <span class="font-semibold text-text-primary">Training Weapons</span>
+            — 50 charges, given out as
+            <span class="font-semibold text-text-primary">Daily Reward shrine rewards</span>.
+            Every 7th claim of the shrine offers a Training Weapon as one of
+            the options. The claims
+            <span class="font-semibold text-text-primary">don't have to be on consecutive days</span> —
+            only the total count of claims matters, so a skipped day just
+            delays the next Training Weapon, it doesn't reset progress.
+            They're not for sale at any NPC.
+          </p>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Restrictions:
+          </p>
+          <ul class="mt-2 list-disc space-y-1 pl-5 text-[13px] leading-relaxed text-text-secondary">
+            <li>
+              Usable
+              <em class="not-italic font-semibold">only</em> on stationary
+              <em class="not-italic">Training Dummies</em> in temples and a
+              handful of public spots — not on Exercise Dummies, not in
+              your house, not on a private dummy.
+            </li>
+            <li>
+              50 charges = 1 minute 40 seconds of use time.
+            </li>
+            <li>
+              Per charge they deliver the same hits / mana / blocks as
+              their Exercise equivalents — just 10× fewer charges per
+              weapon, and no private-dummy bonus available.
+            </li>
+            <li>
+              <span class="font-semibold text-text-primary">They expire after roughly 7 days</span>
+              once you claim them, so you can't hoard a stack — use them
+              soon or lose them.
+            </li>
+          </ul>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            The
+            <a href="/" class="text-accent-violet hover:underline">Training Calculator</a>
+            doesn't price these because they have no monetary cost
+            (TC/gp) — only "log in for a week" — which isn't comparable to
+            the exercise-weapon flow. Worth using them anyway when they
+            stack up in your reward shrine.
+          </p>
+        </section>
+
+        <!-- === Sources === -->
+        <section class="mt-12 border-t border-border-subtle pt-6">
+          <p class="text-[10px] uppercase tracking-wider text-text-tertiary">
+            Sources
+          </p>
+          <ul class="mt-2 space-y-1 text-[11px] text-text-secondary">
+            <li>
+              <a href="https://tibia.fandom.com/wiki/Exercise_Weapons" target="_blank" rel="noopener noreferrer" class="text-accent-violet hover:underline">
+                TibiaWiki — Exercise Weapons
+              </a>
+            </li>
+            <li>
+              <a href="https://tibia.fandom.com/wiki/Exercise_Shield" target="_blank" rel="noopener noreferrer" class="text-accent-violet hover:underline">
+                TibiaWiki — Exercise Shield
+              </a>
+            </li>
+            <li>
+              <a href="https://tibia.fandom.com/wiki/Training_Weapons" target="_blank" rel="noopener noreferrer" class="text-accent-violet hover:underline">
+                TibiaWiki — Training Weapons
+              </a>
+            </li>
+          </ul>
+        </section>
+
+        <!-- === CTA === -->
+        <div class="mt-12 rounded-md border border-accent-violet/40 bg-accent-violet/5 p-5 text-center">
+          <p class="text-[11px] uppercase tracking-wider text-accent-violet">
+            Run the numbers
+          </p>
+          <p class="mx-auto mt-2 max-w-md text-[13px] leading-relaxed text-text-secondary">
+            The Training Calculator turns "how many weapons do I need from
+            skill X to skill Y" into a clean answer, factoring in all the
+            bonuses above and showing cost in both TC and gp.
+          </p>
+          <a
+            href="/#training"
+            class="mt-4 inline-flex items-center gap-2 rounded px-5 py-2 text-[12px] font-medium text-bg-primary transition-opacity hover:opacity-90"
+            style="background: linear-gradient(135deg, #9B8AFB 0%, #5DCAE8 100%);"
+          >
+            Open Training Calculator →
+          </a>
+        </div>
+      </article>
+
+      <!-- Sticky sidebar -->
+      <aside class="hidden lg:block">
+        <div class="sticky top-32 space-y-4">
+          <nav class="rounded-md border border-border-subtle bg-bg-surface p-4">
+            <p class="text-[10px] uppercase tracking-wider text-text-tertiary">
+              On this page
+            </p>
+            <ul class="mt-2 space-y-1 text-[12px] text-text-secondary">
+              <li><a href="#sizes" class="hover:text-accent-violet">1. The three sizes</a></li>
+              <li><a href="#per-charge" class="hover:text-accent-violet">2. What one charge does</a></li>
+              <li><a href="#totals" class="hover:text-accent-violet">3. Totals per weapon</a></li>
+              <li><a href="#bonuses" class="hover:text-accent-violet">4. Bonuses stack</a></li>
+              <li><a href="#why-distance" class="hover:text-accent-violet">5. Distance &amp; shielding</a></li>
+              <li><a href="#training-weapons" class="hover:text-accent-violet">Free Training Weapons</a></li>
+            </ul>
+          </nav>
+
+          <div class="rounded-md border border-accent-violet/40 bg-accent-violet/5 p-4 text-center">
+            <p class="text-[10px] uppercase tracking-wider text-accent-violet">
+              Training Calculator
+            </p>
+            <p class="mx-auto mt-2 text-[12px] leading-relaxed text-text-secondary">
+              From current skill to target — exact weapons, cost, time.
+            </p>
+            <a
+              href="/#training"
+              class="mt-3 inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-[11px] font-medium text-bg-primary transition-opacity hover:opacity-90"
+              style="background: linear-gradient(135deg, #9B8AFB 0%, #5DCAE8 100%);"
+            >
+              Open it →
+            </a>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="mt-8 flex justify-center gap-3">
+      <a
+        href="/guides"
+        class="rounded border border-border-subtle bg-bg-sunken px-4 py-2 text-[12px] text-text-secondary transition-colors hover:border-border-emphasis hover:text-text-primary"
+      >
+        ← All guides
+      </a>
+      <a
+        href="/"
+        class="rounded border border-border-subtle bg-bg-sunken px-4 py-2 text-[12px] text-text-secondary transition-colors hover:border-border-emphasis hover:text-text-primary"
+      >
+        ← Back to TibiaPlan
+      </a>
+    </div>
+  </main>
+
+  <Footer />
+</Layout>

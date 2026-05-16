@@ -3,6 +3,11 @@ import Layout from "../../layouts/Layout.astro";
 import Header from "../../components/Header.astro";
 import Footer from "../../components/Footer.astro";
 
+// Order intentionally matches the order things appear on the home page:
+//   Death simulator (Character Sheet) → Stamina (Character Sheet, below
+//   Blessings) → Training tab → Loot Split tab.
+// The Stamina guide is queued; once it ships, slot it between
+// tibia-death-penalty and tibia-exercise-weapons.
 const guides = [
   {
     slug: "tibia-death-penalty",
@@ -10,6 +15,27 @@ const guides = [
     summary:
       "Exact EXP loss formulas, blessing math, skull penalties, item drop chances, and unfair-fight reduction. Plus the interactive Death Simulator on the home page so you can plug in your own numbers.",
     readingMinutes: 9,
+  },
+  {
+    slug: "tibia-stamina",
+    title: "Tibia Stamina Guide: Happy Hours, Regen & The 14h Penalty",
+    summary:
+      "The three XP zones, why the bar turns red below 39h even though XP stays at 100% until 14h, the 3:1 vs 6:1 regen rates, and the +10 min initial delay that catches everyone off guard. Pairs with the mini-calc in the Character Sheet.",
+    readingMinutes: 6,
+  },
+  {
+    slug: "tibia-exercise-weapons",
+    title: "Tibia Exercise Weapons: Charges, Hits, Mana, Blocks",
+    summary:
+      "Quick reference: what 1 charge of an exercise sword, bow, wand, rod, or shield actually does in the game. Totals for Regular / Durable / Lasting variants, plus the bonus modifiers that stack on top.",
+    readingMinutes: 4,
+  },
+  {
+    slug: "tibia-offline-training",
+    title: "Tibia Offline Training Guide: Statues, Pool & Shielding",
+    summary:
+      "How the 12-hour offline pool works, why short logouts give nothing, which statue to pick by vocation, and the parallel shielding gain that makes offline a two-for-one. Pairs with the in-tab calculator.",
+    readingMinutes: 7,
   },
   {
     slug: "tibia-loot-split",

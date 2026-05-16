@@ -1,0 +1,564 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import Header from "../../components/Header.astro";
+import Footer from "../../components/Footer.astro";
+
+const PUBLISHED = "2026-05-16";
+const MODIFIED = "2026-05-16";
+const URL = "https://tibiaplan.com/guides/tibia-stamina";
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  headline: "Tibia Stamina Guide: Happy Hours, Regen, and the 14h Penalty",
+  description:
+    "How Tibia stamina actually works: the 3 XP zones, regen rates (3:1 vs 6:1), the +10 min initial delay, what doesn't drain stamina, the daily-reward online regen, and the Stamina Extension potion.",
+  datePublished: PUBLISHED,
+  dateModified: MODIFIED,
+  author: { "@type": "Organization", name: "TibiaPlan" },
+  publisher: {
+    "@type": "Organization",
+    name: "TibiaPlan",
+    url: "https://tibiaplan.com",
+  },
+  mainEntityOfPage: { "@type": "WebPage", "@id": URL },
+  url: URL,
+};
+---
+
+<Layout
+  title="Tibia Stamina Guide: Happy Hours, Regen & The 14h Penalty - TibiaPlan"
+  description="The exact math of Tibia stamina: 3 XP zones, 3:1 vs 6:1 regen, the 10-min initial delay, what doesn't drain stamina, and how to refill online."
+  keywords={[
+    "tibia stamina",
+    "tibia happy hours",
+    "tibia stamina regen",
+    "stamina extension potion",
+    "tibia 42 hours",
+  ]}
+  structuredData={structuredData}
+>
+  <Header />
+
+  <main class="mx-auto max-w-7xl px-4 py-10">
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
+      <article class="rounded-md border border-border-subtle bg-bg-surface p-6 sm:p-10">
+        <header>
+          <p class="text-[10px] uppercase tracking-[0.2em] text-accent-violet">
+            Guide · Stamina
+          </p>
+          <h1 class="mt-2 text-[26px] font-medium leading-tight tracking-wide text-text-primary sm:text-[30px]">
+            Tibia Stamina Guide: Happy Hours, Regen &amp; The 14h Penalty
+          </h1>
+          <p class="mt-3 text-[10px] uppercase tracking-wider text-text-tertiary">
+            6 min read · Updated May 2026
+          </p>
+          <p class="mt-4 text-[13px] leading-relaxed text-text-secondary">
+            Tibia's stamina system is small in screen-space — just a number in
+            the corner — but it controls how much experience and loot you get
+            for every minute of hunting. The
+            <a href="/" class="text-accent-violet hover:underline">Stamina mini-calc</a>
+            on the home page tells you how long to wait offline. This guide
+            explains what those numbers mean and where the misconceptions
+            usually hide.
+          </p>
+        </header>
+
+        <!-- Mobile TOC -->
+        <nav class="mt-8 rounded-md border border-border-subtle bg-bg-sunken p-4 lg:hidden">
+          <p class="text-[10px] uppercase tracking-wider text-text-tertiary">
+            On this page
+          </p>
+          <ul class="mt-2 space-y-1 text-[12px] text-text-secondary">
+            <li><a href="#basics" class="hover:text-accent-violet">1. The basics</a></li>
+            <li><a href="#zones" class="hover:text-accent-violet">2. The three XP zones</a></li>
+            <li><a href="#color-vs-effect" class="hover:text-accent-violet">3. Bar color vs actual effect</a></li>
+            <li><a href="#drain" class="hover:text-accent-violet">4. What drains stamina (and what doesn't)</a></li>
+            <li><a href="#regen-offline" class="hover:text-accent-violet">5. Offline regen — 3:1, 6:1, +10 min delay</a></li>
+            <li><a href="#regen-online" class="hover:text-accent-violet">6. Online regen (Daily Reward)</a></li>
+            <li><a href="#potion" class="hover:text-accent-violet">7. Stamina Extension potion</a></li>
+            <li><a href="#playstyle" class="hover:text-accent-violet">8. Practical playstyle tips</a></li>
+          </ul>
+        </nav>
+
+        <!-- === Section 1: Basics === -->
+        <section id="basics" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            1. The basics
+          </h2>
+          <ul class="mt-3 list-disc space-y-2 pl-5 text-[13px] leading-relaxed text-text-secondary">
+            <li>
+              Full stamina is <span class="font-semibold text-text-primary">42:00</span> (42 hours).
+            </li>
+            <li>
+              Stamina <em class="not-italic font-semibold">only</em> drains when
+              you actually gain experience from killing a monster. Idling,
+              training, making runes, and getting hit by monsters
+              <span class="font-semibold text-text-primary">do not</span> drain
+              it.
+            </li>
+            <li>
+              The first kill from a no-combat state always drains a
+              <span class="font-semibold text-text-primary">minimum of 2 minutes</span> —
+              this protects against re-logging tricks.
+            </li>
+            <li>
+              Stamina only matters for premium accounts in one specific way
+              (the Happy Hours bonus). The rest of the system applies to
+              everyone.
+            </li>
+          </ul>
+        </section>
+
+        <!-- === Section 2: Three zones === -->
+        <section id="zones" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            2. The three XP zones
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Stamina's only job is to scale your XP per kill. There are three
+            distinct rates depending on how much stamina you have left:
+          </p>
+
+          <div class="mt-4 overflow-x-auto">
+            <table class="w-full border-collapse text-[12px]">
+              <thead class="border-b border-border-subtle text-text-tertiary">
+                <tr>
+                  <th class="px-3 py-2 text-left font-medium">Zone</th>
+                  <th class="px-3 py-2 text-left font-medium">Stamina range</th>
+                  <th class="px-3 py-2 text-right font-medium">XP multiplier</th>
+                  <th class="px-3 py-2 text-left font-medium">Notes</th>
+                </tr>
+              </thead>
+              <tbody class="text-text-secondary">
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2"><span class="font-semibold text-success">Happy Hours</span></td>
+                  <td class="px-3 py-2">39:00 – 42:00</td>
+                  <td class="px-3 py-2 text-right font-semibold text-success">150%</td>
+                  <td class="px-3 py-2">+50% bonus — <span class="font-semibold text-text-primary">premium only</span>. Free accounts get 100% in this range.</td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2"><span class="font-semibold text-text-primary">Normal</span></td>
+                  <td class="px-3 py-2">14:00 – 39:00</td>
+                  <td class="px-3 py-2 text-right">100%</td>
+                  <td class="px-3 py-2">Where you spend most of your hunting time.</td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2"><span class="font-semibold text-danger">Penalty</span></td>
+                  <td class="px-3 py-2">0:01 – 14:00</td>
+                  <td class="px-3 py-2 text-right font-semibold text-danger">50%</td>
+                  <td class="px-3 py-2">Plus: monsters drop <span class="font-semibold text-text-primary">no loot</span> if you dealt the most damage, and no coop loot at all.</td>
+                </tr>
+                <tr>
+                  <td class="px-3 py-2"><span class="font-semibold text-danger">Empty</span></td>
+                  <td class="px-3 py-2">0:00</td>
+                  <td class="px-3 py-2 text-right font-semibold text-danger">0%</td>
+                  <td class="px-3 py-2">No XP and no loot at all. Log out and refill.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="mt-4 text-[13px] leading-relaxed text-text-secondary">
+            <span class="font-semibold text-text-primary">A note on free vs premium:</span>
+            the +50% Happy Hours bonus is the only XP modifier locked behind
+            premium. The normal-zone 100% rate and the below-14h penalty
+            apply equally to everyone.
+          </p>
+        </section>
+
+        <!-- === Section 3: Color vs effect === -->
+        <section id="color-vs-effect" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            3. Bar color vs actual effect
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            This is where most players get confused. The in-game stamina bar
+            uses
+            <span class="font-semibold text-text-primary">two colors</span>:
+          </p>
+
+          <ul class="mt-3 list-disc space-y-2 pl-5 text-[13px] leading-relaxed text-text-secondary">
+            <li>
+              <span class="font-semibold text-success">Green</span> — when
+              you're in the Happy Hours range (39:00 – 42:00).
+            </li>
+            <li>
+              <span class="font-semibold text-danger">Red</span> — anywhere
+              below 39:00, all the way down to 0:00.
+            </li>
+          </ul>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            But the
+            <em class="not-italic font-semibold">XP penalty</em>
+            only kicks in below 14:00. So the bar can look red and feel like
+            a warning, but if you're at, say, 25:00, you're still earning
+            100% XP — just no bonus. The red color from 14:00 to 39:00 is
+            "you're out of bonus", not "you're being penalised".
+          </p>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            <span class="font-semibold text-text-primary">Rule of thumb:</span>
+            trust the
+            <em class="not-italic">number</em>, not the colour. As long as
+            your stamina reads 14:00 or higher, your XP is at 100% (or 150%
+            if you're a premium in the green range).
+          </p>
+        </section>
+
+        <!-- === Section 4: Drain === -->
+        <section id="drain" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            4. What drains stamina (and what doesn't)
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Stamina drains at
+            <span class="font-semibold text-text-primary">exactly 1:1</span>
+            with real-world time — every minute you spend gaining XP from a
+            monster kill drains 1 minute of stamina. The zone you're in
+            (green / red / penalty) doesn't change the drain rate; only the
+            XP multiplier.
+          </p>
+
+          <h3 class="mt-5 text-[14px] font-medium text-text-primary">
+            What does NOT drain stamina
+          </h3>
+          <ul class="mt-2 list-disc space-y-1 pl-5 text-[13px] leading-relaxed text-text-secondary">
+            <li>Training on dummies (regular or exercise weapons).</li>
+            <li>Being attacked by monsters without killing any.</li>
+            <li>Killing summoned monsters (your own or a teammate's).</li>
+            <li>Making runes, casting spells, mana-sitting.</li>
+            <li>Travel, depot management, chat, quests with no kills.</li>
+          </ul>
+
+          <h3 class="mt-5 text-[14px] font-medium text-text-primary">
+            The 2-minute minimum drain
+          </h3>
+          <p class="mt-2 text-[13px] leading-relaxed text-text-secondary">
+            When you initiate combat after being out of combat, the
+            <em class="not-italic">first</em> kill drains a minimum of
+            <span class="font-semibold text-text-primary">2 minutes</span> of
+            stamina, even if the fight took 5 seconds. This stops players
+            from re-logging to dodge stamina drain on quick kills.
+          </p>
+        </section>
+
+        <!-- === Section 5: Offline regen === -->
+        <section id="regen-offline" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            5. Offline regen — 3:1, 6:1, and the 10-minute delay
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            The default way to refill stamina is to log out. Two rules
+            govern the regen rate:
+          </p>
+
+          <div class="mt-4 overflow-x-auto">
+            <table class="w-full border-collapse text-[12px]">
+              <thead class="border-b border-border-subtle text-text-tertiary">
+                <tr>
+                  <th class="px-3 py-2 text-left font-medium">Stamina range being refilled</th>
+                  <th class="px-3 py-2 text-left font-medium">Regen ratio</th>
+                  <th class="px-3 py-2 text-left font-medium">Meaning</th>
+                </tr>
+              </thead>
+              <tbody class="text-text-secondary">
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2">Below 39:00 (red zone)</td>
+                  <td class="px-3 py-2 font-mono">3 : 1</td>
+                  <td class="px-3 py-2">3 minutes offline = 1 minute of stamina back</td>
+                </tr>
+                <tr>
+                  <td class="px-3 py-2">39:00 – 42:00 (green / bonus)</td>
+                  <td class="px-3 py-2 font-mono font-semibold text-accent-cyan">6 : 1</td>
+                  <td class="px-3 py-2">6 minutes offline = 1 minute of stamina back (twice as slow)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 class="mt-5 text-[14px] font-medium text-text-primary">
+            The +10 minute initial delay
+          </h3>
+          <p class="mt-2 text-[13px] leading-relaxed text-text-secondary">
+            Stamina does
+            <em class="not-italic font-semibold">not</em> start regenerating
+            the moment you log out. The character needs to be logged off for
+            a continuous
+            <span class="font-semibold text-text-primary">10 minutes</span>
+            before any regen begins. This is the same 10 minutes whether
+            you're at 41:00 or at 0:00 — it's a fixed start-up cost.
+          </p>
+          <p class="mt-2 text-[13px] leading-relaxed text-text-secondary">
+            Short hunting breaks lose disproportionately to this delay.
+            Logging off for 8 minutes and back in gets you
+            <span class="font-semibold text-text-primary">zero</span>
+            stamina regen. Logging off for 11 minutes gets you 1 minute of
+            regen at the normal rate, or 10 seconds at the green rate.
+          </p>
+
+          <h3 class="mt-5 text-[14px] font-medium text-text-primary">
+            The wiki's anchor example
+          </h3>
+          <p class="mt-2 text-[13px] leading-relaxed text-text-secondary">
+            From TibiaWiki, the reference figure everyone can verify:
+            going from
+            <span class="font-mono">39:00 → 42:00</span> takes
+            <span class="font-semibold text-text-primary">18 hours and 10 minutes</span>
+            of being offline. Math:
+          </p>
+          <div class="mt-3 rounded border border-border-subtle bg-bg-sunken p-4 font-mono text-[12px] text-text-primary">
+            <p class="text-accent-cyan">3h of green = 180 min × 6 = 1,080 min offline</p>
+            <p class="mt-1 text-accent-cyan">+ 10 min initial delay</p>
+            <p class="mt-1 text-accent-cyan">= 1,090 min = 18h 10m ✓</p>
+          </div>
+
+          <h3 class="mt-5 text-[14px] font-medium text-text-primary">
+            Worked examples
+          </h3>
+          <div class="mt-3 overflow-x-auto">
+            <table class="w-full border-collapse text-[12px]">
+              <thead class="border-b border-border-subtle text-text-tertiary">
+                <tr>
+                  <th class="px-3 py-2 text-left font-medium">Starting stamina</th>
+                  <th class="px-3 py-2 text-left font-medium">Time offline to reach 42:00</th>
+                </tr>
+              </thead>
+              <tbody class="text-text-secondary">
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 font-mono">41:00</td>
+                  <td class="px-3 py-2">6h 10m (1h green × 6 + 10 = 370 min)</td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 font-mono">40:00</td>
+                  <td class="px-3 py-2">12h 10m (2h green × 6 + 10 = 730 min)</td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 font-mono">39:00</td>
+                  <td class="px-3 py-2">18h 10m (3h green × 6 + 10 = 1,090 min)</td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 font-mono">36:00</td>
+                  <td class="px-3 py-2">27h 10m (3h white × 3 + 3h green × 6 + 10 = 1,630 min)</td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 font-mono">30:00</td>
+                  <td class="px-3 py-2">45h 10m (9h white × 3 + 3h green × 6 + 10 = 2,710 min)</td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 font-mono">14:00</td>
+                  <td class="px-3 py-2">3d 21h 10m (25h white × 3 + 3h green × 6 + 10 = 5,590 min)</td>
+                </tr>
+                <tr>
+                  <td class="px-3 py-2 font-mono">0:00</td>
+                  <td class="px-3 py-2">5d 15h 10m (39h white × 3 + 3h green × 6 + 10 = 8,110 min)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Plug your own number into the
+            <a href="/" class="text-accent-violet hover:underline">Stamina mini-calc on the home page</a> —
+            it returns the exact offline time including the 10-minute delay.
+          </p>
+        </section>
+
+        <!-- === Section 6: Online regen === -->
+        <section id="regen-online" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            6. Online regen — the Daily Reward streak
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Since the Summer Update 2017 you can regenerate stamina
+            <em class="not-italic font-semibold">while online</em> — but only
+            under two conditions:
+          </p>
+
+          <ol class="mt-3 list-decimal space-y-2 pl-5 text-[13px] leading-relaxed text-text-secondary">
+            <li>
+              You've claimed your Daily Reward
+              <span class="font-semibold text-text-primary">4 days in a row</span>
+              (the streak applies as long as you don't break it).
+            </li>
+            <li>
+              You're standing in a
+              <span class="font-semibold text-text-primary">Resting Area</span>.
+              That's:
+              <ul class="mt-1 list-disc space-y-0.5 pl-5">
+                <li>Any city depot</li>
+                <li>Any temple</li>
+                <li>Inside your own house</li>
+                <li>Guildhalls</li>
+                <li>The Adventurers' Guild</li>
+              </ul>
+            </li>
+          </ol>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            The regen rate while online in a Resting Area is the same as the
+            offline rate — 3:1 in red, 6:1 in green, no 10-minute initial
+            delay. Convenient if you want to AFK in your depot between hunts
+            instead of fully logging out.
+          </p>
+        </section>
+
+        <!-- === Section 7: Potion === -->
+        <section id="potion" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            7. Stamina Extension potion
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Added in Summer Update 2021. A consumable that
+            <span class="font-semibold text-text-primary">instantly restores 1 hour</span>
+            of stamina. It can't push you over the 42:00 cap — if you're at
+            41:30 the potion brings you to 42:00 (30 minutes "wasted") and
+            the rest is gone. Save them for when you're well below 42:00.
+          </p>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            They're not common drops, but they show up in the Store and as
+            event rewards. The trade-off is straightforward: 1 hour of
+            stamina would normally take 3 hours offline (red zone) or 6
+            hours offline (green zone) to recover, so the potion is most
+            valuable when you're trying to grind during the green zone or
+            during a Double XP event.
+          </p>
+        </section>
+
+        <!-- === Section 8: Playstyle === -->
+        <section id="playstyle" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            8. Practical playstyle tips
+          </h2>
+          <ul class="mt-3 list-disc space-y-2 pl-5 text-[13px] leading-relaxed text-text-secondary">
+            <li>
+              <span class="font-semibold text-text-primary">Use the Happy Hours daily.</span>
+              The 3-hour green zone refills in ~18 hours offline, which
+              lines up perfectly with sleep + work. Hunt your premium 3
+              hours in the morning, log off, and the bonus is ready again
+              by the next morning.
+            </li>
+            <li>
+              <span class="font-semibold text-text-primary">Don't hunt below 14:00 unless you have to.</span>
+              The 50% XP cut + loot loss make those hours pure punishment.
+              If you absolutely must keep playing, do non-stamina-draining
+              activities (training, runemaking, quests).
+            </li>
+            <li>
+              <span class="font-semibold text-text-primary">Don't take 5-minute breaks expecting regen.</span>
+              The 10-minute initial delay means short logouts give nothing.
+              Either stay online or log off for 30+ minutes.
+            </li>
+            <li>
+              <span class="font-semibold text-text-primary">Reach a Resting Area before logging off if your streak is active.</span>
+              Online regen at the depot is just as effective as full logout
+              — and lets you trade or post in the market while you wait.
+            </li>
+            <li>
+              <span class="font-semibold text-text-primary">Save Stamina Extension potions for Double XP events.</span>
+              An extra hour of stamina during +100% XP is dramatically more
+              valuable than during a normal session.
+            </li>
+          </ul>
+        </section>
+
+        <!-- === Sources === -->
+        <section class="mt-12 border-t border-border-subtle pt-6">
+          <p class="text-[10px] uppercase tracking-wider text-text-tertiary">
+            Sources
+          </p>
+          <ul class="mt-2 space-y-1 text-[11px] text-text-secondary">
+            <li>
+              <a href="https://tibia.fandom.com/wiki/Stamina" target="_blank" rel="noopener noreferrer" class="text-accent-violet hover:underline">
+                TibiaWiki — Stamina
+              </a>
+            </li>
+            <li>
+              <a href="https://tibia.fandom.com/wiki/Daily_Reward_System" target="_blank" rel="noopener noreferrer" class="text-accent-violet hover:underline">
+                TibiaWiki — Daily Reward System
+              </a>
+            </li>
+            <li>
+              <a href="https://tibia.fandom.com/wiki/Stamina_Extension" target="_blank" rel="noopener noreferrer" class="text-accent-violet hover:underline">
+                TibiaWiki — Stamina Extension
+              </a>
+            </li>
+          </ul>
+        </section>
+
+        <!-- === CTA === -->
+        <div class="mt-10 rounded-md border border-accent-violet/40 bg-accent-violet/5 p-5 text-center">
+          <p class="text-[11px] uppercase tracking-wider text-accent-violet">
+            Use the mini-calc
+          </p>
+          <p class="mx-auto mt-2 max-w-md text-[13px] leading-relaxed text-text-secondary">
+            Type your current stamina into the Character Sheet on the home
+            page and the offline-time-to-42:00 appears instantly.
+          </p>
+          <a
+            href="/"
+            class="mt-4 inline-flex items-center gap-2 rounded px-5 py-2 text-[12px] font-medium text-bg-primary transition-opacity hover:opacity-90"
+            style="background: linear-gradient(135deg, #9B8AFB 0%, #5DCAE8 100%);"
+          >
+            Open the Stamina calc →
+          </a>
+        </div>
+      </article>
+
+      <!-- Sticky sidebar -->
+      <aside class="hidden lg:block">
+        <div class="sticky top-32 space-y-4">
+          <nav class="rounded-md border border-border-subtle bg-bg-surface p-4">
+            <p class="text-[10px] uppercase tracking-wider text-text-tertiary">
+              On this page
+            </p>
+            <ul class="mt-2 space-y-1 text-[12px] text-text-secondary">
+              <li><a href="#basics" class="hover:text-accent-violet">1. The basics</a></li>
+              <li><a href="#zones" class="hover:text-accent-violet">2. Three XP zones</a></li>
+              <li><a href="#color-vs-effect" class="hover:text-accent-violet">3. Color vs effect</a></li>
+              <li><a href="#drain" class="hover:text-accent-violet">4. What drains stamina</a></li>
+              <li><a href="#regen-offline" class="hover:text-accent-violet">5. Offline regen</a></li>
+              <li><a href="#regen-online" class="hover:text-accent-violet">6. Online regen</a></li>
+              <li><a href="#potion" class="hover:text-accent-violet">7. Extension potion</a></li>
+              <li><a href="#playstyle" class="hover:text-accent-violet">8. Playstyle tips</a></li>
+            </ul>
+          </nav>
+
+          <div class="rounded-md border border-accent-violet/40 bg-accent-violet/5 p-4 text-center">
+            <p class="text-[10px] uppercase tracking-wider text-accent-violet">
+              Stamina calc
+            </p>
+            <p class="mx-auto mt-2 text-[12px] leading-relaxed text-text-secondary">
+              Type your current stamina, get offline time to 42:00.
+            </p>
+            <a
+              href="/"
+              class="mt-3 inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-[11px] font-medium text-bg-primary transition-opacity hover:opacity-90"
+              style="background: linear-gradient(135deg, #9B8AFB 0%, #5DCAE8 100%);"
+            >
+              Open it →
+            </a>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="mt-8 flex justify-center gap-3">
+      <a
+        href="/guides"
+        class="rounded border border-border-subtle bg-bg-sunken px-4 py-2 text-[12px] text-text-secondary transition-colors hover:border-border-emphasis hover:text-text-primary"
+      >
+        ← All guides
+      </a>
+      <a
+        href="/"
+        class="rounded border border-border-subtle bg-bg-sunken px-4 py-2 text-[12px] text-text-secondary transition-colors hover:border-border-emphasis hover:text-text-primary"
+      >
+        ← Back to TibiaPlan
+      </a>
+    </div>
+  </main>
+
+  <Footer />
+</Layout>

@@ -1,0 +1,552 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import Header from "../../components/Header.astro";
+import Footer from "../../components/Footer.astro";
+
+const PUBLISHED = "2026-05-16";
+const MODIFIED = "2026-05-16";
+const URL = "https://tibiaplan.com/guides/tibia-offline-training";
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  headline: "Tibia Offline Training Guide: Statues, Pool, and Shielding Parallel",
+  description:
+    "How offline training actually works: the 12-hour pool, the 10-minute logout delay, statue choices per vocation, shielding always trains in parallel at half rate, and which vocations gain most from offline.",
+  datePublished: PUBLISHED,
+  dateModified: MODIFIED,
+  author: { "@type": "Organization", name: "TibiaPlan" },
+  publisher: {
+    "@type": "Organization",
+    name: "TibiaPlan",
+    url: "https://tibiaplan.com",
+  },
+  mainEntityOfPage: { "@type": "WebPage", "@id": URL },
+  url: URL,
+};
+---
+
+<Layout
+  title="Tibia Offline Training Guide: Statues, Pool & Shielding - TibiaPlan"
+  description="How offline training works: 12-hour pool mechanics, 10-min logout delay, statue choices per vocation, parallel shielding gain, premium vs free differences."
+  keywords={[
+    "tibia offline training",
+    "tibia training statue",
+    "tibia offline pool",
+    "tibia training school",
+    "tibia parallel shielding",
+  ]}
+  structuredData={structuredData}
+>
+  <Header />
+
+  <main class="mx-auto max-w-7xl px-4 py-10">
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
+      <article class="rounded-md border border-border-subtle bg-bg-surface p-6 sm:p-10">
+        <header>
+          <p class="text-[10px] uppercase tracking-[0.2em] text-accent-violet">
+            Guide · Training
+          </p>
+          <h1 class="mt-2 text-[26px] font-medium leading-tight tracking-wide text-text-primary sm:text-[30px]">
+            Tibia Offline Training Guide: Statues, Pool &amp; Shielding Parallel
+          </h1>
+          <p class="mt-3 text-[10px] uppercase tracking-wider text-text-tertiary">
+            7 min read · Updated May 2026
+          </p>
+          <p class="mt-4 text-[13px] leading-relaxed text-text-secondary">
+            Offline training is the quiet workhorse of every Tibia
+            character. You log out at a training statue, the game trains
+            for you while you're not playing, and your skills creep up
+            without spending a single gold coin. The
+            <a href="/" class="text-accent-violet hover:underline">Offline Training calculator</a>
+            on the home page tells you exactly how long it'll take. This
+            guide explains the mechanics behind that number — pool, delay,
+            statue choice, and the parallel shielding gain that makes
+            offline uniquely valuable.
+          </p>
+        </header>
+
+        <!-- Mobile-only TOC -->
+        <nav class="mt-8 rounded-md border border-border-subtle bg-bg-sunken p-4 lg:hidden">
+          <p class="text-[10px] uppercase tracking-wider text-text-tertiary">
+            On this page
+          </p>
+          <ul class="mt-2 space-y-1 text-[12px] text-text-secondary">
+            <li><a href="#what" class="hover:text-accent-violet">1. What offline training is</a></li>
+            <li><a href="#pool" class="hover:text-accent-violet">2. The 12-hour pool</a></li>
+            <li><a href="#delay" class="hover:text-accent-violet">3. The 10-minute logout delay</a></li>
+            <li><a href="#statues" class="hover:text-accent-violet">4. The 5 statue choices</a></li>
+            <li><a href="#shielding" class="hover:text-accent-violet">5. Shielding always trains in parallel</a></li>
+            <li><a href="#vocations" class="hover:text-accent-violet">6. Vocation impact</a></li>
+            <li><a href="#bonuses" class="hover:text-accent-violet">7. Loyalty &amp; Daily Reward</a></li>
+            <li><a href="#free-cap" class="hover:text-accent-violet">8. Free account caps</a></li>
+            <li><a href="#strategy" class="hover:text-accent-violet">9. Strategy &amp; when to use it</a></li>
+          </ul>
+        </nav>
+
+        <!-- === Section 1: What === -->
+        <section id="what" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            1. What offline training is
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Offline training is a system CipSoft added so casual players
+            can keep advancing skills without sitting at the screen. You
+            walk into a Training School, find the
+            <span class="font-semibold text-text-primary">training statue</span>
+            for the skill you want, "use" it, and log out. The game
+            simulates training for you while you're offline.
+          </p>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Unlike <a href="/guides/tibia-exercise-weapons" class="text-accent-violet hover:underline">exercise weapons</a>,
+            offline training is
+            <span class="font-semibold text-text-primary">free</span> — no
+            Tibia Coins, no gold. The trade-off: it's slower per hour, and
+            capped at 12 hours per day.
+          </p>
+        </section>
+
+        <!-- === Section 2: Pool === -->
+        <section id="pool" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            2. The 12-hour pool
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Every character has a hidden "offline training pool" that maxes
+            at <span class="font-semibold text-text-primary">12 hours</span>.
+            Each second you train offline drains one second from the pool.
+            Two ways to refill it:
+          </p>
+
+          <ul class="mt-3 list-disc space-y-2 pl-5 text-[13px] leading-relaxed text-text-secondary">
+            <li>
+              <span class="font-semibold text-text-primary">While online:</span>
+              for every second you're logged in, the pool regenerates by
+              one second (1:1 ratio).
+            </li>
+            <li>
+              <span class="font-semibold text-text-primary">After the pool hits 0 offline:</span>
+              if you've burned through 12h and stay offline, each minute
+              past that point still adds 1 minute back to the pool — but
+              you don't get the training benefit until you log in and use
+              a statue again.
+            </li>
+          </ul>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            <span class="font-semibold text-text-primary">Practical example:</span>
+            you log off for 24 hours. The first 12 hours you train (pool
+            drains to 0). The next 12 hours you regen the pool back to
+            full. When you log in 24h later, you've gained 12 hours of
+            training and your pool is full again.
+          </p>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            This is why the
+            <a href="/" class="text-accent-violet hover:underline">Offline Training calculator</a>
+            shows two perspectives: pure training time (capped at 12h/day
+            of useful training) and real-world calendar days assuming you
+            cycle 12h offline + 12h online consistently.
+          </p>
+        </section>
+
+        <!-- === Section 3: Delay === -->
+        <section id="delay" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            3. The 10-minute logout delay
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Offline training does
+            <em class="not-italic font-semibold">not</em> begin the moment
+            you log out. The character has to be offline for at least
+            <span class="font-semibold text-text-primary">10 minutes</span>
+            before training starts ticking. Short bathroom breaks are not
+            worth it — the 10-minute clock resets if you log back in
+            before it expires.
+          </p>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            This is the same 10-minute rule that gates
+            <a href="/guides/tibia-stamina#regen-offline" class="text-accent-violet hover:underline">stamina regeneration</a> —
+            CipSoft uses the same logout-delay system for both.
+          </p>
+        </section>
+
+        <!-- === Section 4: Statues === -->
+        <section id="statues" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            4. The 5 statue choices
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            When you arrive at a Training School you'll see one statue per
+            trainable skill. "Use" the statue that matches the skill you
+            want offline-training to focus on:
+          </p>
+
+          <div class="mt-4 overflow-x-auto">
+            <table class="w-full border-collapse text-[12px]">
+              <thead class="border-b border-border-subtle text-text-tertiary">
+                <tr>
+                  <th class="px-3 py-2 text-left font-medium">Statue</th>
+                  <th class="px-3 py-2 text-left font-medium">Trains</th>
+                  <th class="px-3 py-2 text-left font-medium">Best for vocation(s)</th>
+                </tr>
+              </thead>
+              <tbody class="text-text-secondary">
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 font-semibold text-text-primary">Sword</td>
+                  <td class="px-3 py-2">Sword Fighting + Shielding</td>
+                  <td class="px-3 py-2">Knight</td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 font-semibold text-text-primary">Axe</td>
+                  <td class="px-3 py-2">Axe Fighting + Shielding</td>
+                  <td class="px-3 py-2">Knight</td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 font-semibold text-text-primary">Club</td>
+                  <td class="px-3 py-2">Club Fighting + Shielding</td>
+                  <td class="px-3 py-2">Knight</td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 font-semibold text-text-primary">Distance</td>
+                  <td class="px-3 py-2">Distance Fighting + Shielding</td>
+                  <td class="px-3 py-2">Paladin</td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 font-semibold text-text-primary">Magic</td>
+                  <td class="px-3 py-2">Magic Level + Shielding</td>
+                  <td class="px-3 py-2">Sorcerer · Druid (Paladin / Monk benefit some)</td>
+                </tr>
+                <tr>
+                  <td class="px-3 py-2 font-semibold text-text-primary">Fist (Monk)</td>
+                  <td class="px-3 py-2">Fist Fighting + Shielding</td>
+                  <td class="px-3 py-2">Monk</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            You can technically use any statue regardless of your
+            vocation, but the vocation constant affects how fast skills
+            grow — a knight at the Magic statue progresses painfully slow
+            compared to a sorcerer using the same statue.
+          </p>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            <span class="font-semibold text-text-primary">Monks special case:</span>
+            the Fist + Shielding statues only exist in two locations —
+            the <span class="font-semibold text-text-primary">Adventurer's Guild</span>
+            and the <span class="font-semibold text-text-primary">Blue Valley temple</span>.
+            If you don't have access to either, you're stuck with the
+            generic statue options.
+          </p>
+
+          <h3 class="mt-6 text-[14px] font-medium text-text-primary">
+            Beds also work as offline-training spots
+          </h3>
+          <p class="mt-2 text-[13px] leading-relaxed text-text-secondary">
+            Since the Autumn Patch 2012, beds count too. Sleep in your
+            house bed (or any bed in a city inn) and you'll receive
+            offline training just like at a statue. If a hireling
+            evicts you mid-sleep, training continues — only the HP/Mana
+            sleep regeneration stops. The catch: beds only train the
+            <em class="not-italic">last skill combo</em> you selected at
+            a statue. If you've never picked one, defaults apply.
+          </p>
+        </section>
+
+        <!-- === Section 5: Shielding parallel === -->
+        <section id="shielding" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            5. Shielding always trains in parallel
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Every statue trains
+            <span class="font-semibold text-text-primary">Shielding alongside the main skill</span>,
+            at exactly half the main rate. There's no Shielding-only
+            statue — Shielding piggybacks on whatever skill you picked.
+          </p>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            For knights this is huge: training Sword/Axe/Club also raises
+            Shielding at meaningful speed because both skills use the
+            same vocation constant. For paladins it's still useful but
+            the Shielding gain is slower in absolute terms because the
+            base distance rate is what feeds it.
+          </p>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            The calculator surfaces this explicitly. Below the main result
+            there&apos;s an optional &ldquo;Want to know how much your
+            shielding would advance too?&rdquo; expander — plug in your
+            current shielding and % to next, and it projects where
+            you&apos;d land after the same training period.
+          </p>
+        </section>
+
+        <!-- === Section 6: Vocations === -->
+        <section id="vocations" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            6. Vocation impact
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Each vocation has a different
+            <span class="font-semibold text-text-primary">skill constant</span>
+            per skill — the same offline-training rate produces wildly
+            different progression depending on who's training:
+          </p>
+
+          <div class="mt-4 overflow-x-auto">
+            <table class="w-full border-collapse text-[12px]">
+              <thead class="border-b border-border-subtle text-text-tertiary">
+                <tr>
+                  <th class="px-3 py-2 text-left font-medium">Vocation</th>
+                  <th class="px-3 py-2 text-left font-medium">Fastest skills offline</th>
+                  <th class="px-3 py-2 text-left font-medium">Worst pick</th>
+                </tr>
+              </thead>
+              <tbody class="text-text-secondary">
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 font-semibold text-text-primary">Knight</td>
+                  <td class="px-3 py-2">Sword / Axe / Club (+ Shielding parallel)</td>
+                  <td class="px-3 py-2">Magic Level (constant 3.0 = years per level)</td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 font-semibold text-text-primary">Paladin</td>
+                  <td class="px-3 py-2">Distance · Magic Level both reasonable</td>
+                  <td class="px-3 py-2">No bad pick — pick the lagging skill</td>
+                </tr>
+                <tr class="border-b border-border-subtle/50">
+                  <td class="px-3 py-2 font-semibold text-text-primary">Sorcerer · Druid</td>
+                  <td class="px-3 py-2">Magic Level (constant 1.1 = same as melee for them)</td>
+                  <td class="px-3 py-2">N/A — they don't train melee meaningfully</td>
+                </tr>
+                <tr>
+                  <td class="px-3 py-2 font-semibold text-text-primary">Monk</td>
+                  <td class="px-3 py-2">Fist (+ Shielding) · Magic Level slightly slower</td>
+                  <td class="px-3 py-2">Magic Level (constant 1.25 — usable but not fastest)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            The owner's insight that motivated building this calculator:
+            paladins past mid-level (Distance 100+) often have a
+            <em class="not-italic">lower</em> Magic Level relative to
+            their main skill, and at that point each offline minute of ML
+            yields more relative progression than another minute of
+            Distance. Plugging your numbers into the calc tells you which
+            skill is actually behind for your level.
+          </p>
+        </section>
+
+        <!-- === Section 7: Bonuses === -->
+        <section id="bonuses" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            7. Loyalty &amp; Daily Reward
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Two stack-able bonuses apply to offline training the same way
+            they apply to online training:
+          </p>
+
+          <ul class="mt-3 list-disc space-y-2 pl-5 text-[13px] leading-relaxed text-text-secondary">
+            <li>
+              <span class="font-semibold text-text-primary">Loyalty bonus</span>
+              — Premium account loyalty, ranging from 0% to 50% in 5%
+              steps. Multiplies all skill gains while training (online or
+              offline). A character with 50% loyalty trains 1.5× faster
+              than a fresh-premium one in the same time.
+            </li>
+            <li>
+              <span class="font-semibold text-text-primary">Double Exp / Skill events</span>
+              — CipSoft runs these a few times per year (Christmas, summer,
+              etc.). During the event all skill gains
+              <em class="not-italic">including offline</em> are doubled.
+              Saving up your training for these windows is one of the
+              highest-leverage moves in the game.
+            </li>
+          </ul>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            <span class="font-semibold text-text-primary">Daily Reward note:</span>
+            unlike the
+            <a href="/guides/tibia-stamina#regen-online" class="text-accent-violet hover:underline">stamina online-regen bonus</a> that
+            requires a 4-day streak + Resting Area, offline training itself
+            doesn't gate behind Daily Reward. You can use a statue from
+            day one as a free/premium character.
+          </p>
+        </section>
+
+        <!-- === Section 8: Free cap === -->
+        <section id="free-cap" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            8. Free account caps
+          </h2>
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            CipSoft pushes premium accounts hard via offline training
+            limits. Free accounts:
+          </p>
+
+          <ul class="mt-3 list-disc space-y-2 pl-5 text-[13px] leading-relaxed text-text-secondary">
+            <li>
+              Max weapon skill via offline training:
+              <span class="font-semibold text-text-primary">50</span>
+            </li>
+            <li>
+              Max Magic Level via offline training:
+              <span class="font-semibold text-text-primary">30</span>
+            </li>
+            <li>
+              Skill gain rate is slower than premium even within those caps.
+            </li>
+          </ul>
+
+          <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+            Once you hit a cap as a free account, the statue still
+            consumes pool time but produces no skill — log in and use
+            online methods instead until you upgrade to premium.
+          </p>
+        </section>
+
+        <!-- === Section 9: Strategy === -->
+        <section id="strategy" class="mt-10">
+          <h2 class="text-[18px] font-medium text-text-primary">
+            9. Strategy &amp; when offline shines
+          </h2>
+
+          <ul class="mt-3 list-disc space-y-2 pl-5 text-[13px] leading-relaxed text-text-secondary">
+            <li>
+              <span class="font-semibold text-text-primary">Always log out at a statue if you can.</span>
+              The 10-minute delay means short pauses don't help, but the
+              cost of using a statue is zero. There's no reason to log out
+              anywhere else if a Training School is nearby.
+            </li>
+            <li>
+              <span class="font-semibold text-text-primary">Match the statue to your weakest skill, not your highest.</span>
+              The calculator shows the time-to-target; pick the skill
+              where the time-to-next-level is shortest and you're behind.
+            </li>
+            <li>
+              <span class="font-semibold text-text-primary">Stack offline with exercise weapons during Double XP.</span>
+              Both training methods double during events, and you can do
+              both in the same 24-hour window: hunt + use exercise
+              weapons during the day, log out at a statue overnight.
+            </li>
+            <li>
+              <span class="font-semibold text-text-primary">Don't ignore the shielding parallel.</span>
+              If you needed shielding anyway, every minute of offline
+              training is "two skills for the price of one". Knights
+              especially: training Sword offline IS training Shielding
+              offline.
+            </li>
+            <li>
+              <span class="font-semibold text-text-primary">Free accounts: don't waste pool above the cap.</span>
+              If you're a free Knight with Sword 50 already, logging out
+              at the Sword statue gains you nothing — switch to a skill
+              still under the cap.
+            </li>
+          </ul>
+        </section>
+
+        <!-- === Sources === -->
+        <section class="mt-12 border-t border-border-subtle pt-6">
+          <p class="text-[10px] uppercase tracking-wider text-text-tertiary">
+            Sources
+          </p>
+          <ul class="mt-2 space-y-1 text-[11px] text-text-secondary">
+            <li>
+              <a href="https://tibia.fandom.com/wiki/Training_School" target="_blank" rel="noopener noreferrer" class="text-accent-violet hover:underline">
+                TibiaWiki — Training School
+              </a>
+            </li>
+            <li>
+              <a href="https://tibia.fandom.com/wiki/Training" target="_blank" rel="noopener noreferrer" class="text-accent-violet hover:underline">
+                TibiaWiki — Training
+              </a>
+            </li>
+            <li>
+              <a href="https://tibia.fandom.com/wiki/Offline_Training_(Book)" target="_blank" rel="noopener noreferrer" class="text-accent-violet hover:underline">
+                TibiaWiki — Offline Training (in-game book)
+              </a>
+            </li>
+          </ul>
+        </section>
+
+        <!-- === CTA === -->
+        <div class="mt-10 rounded-md border border-accent-violet/40 bg-accent-violet/5 p-5 text-center">
+          <p class="text-[11px] uppercase tracking-wider text-accent-violet">
+            Plug in your numbers
+          </p>
+          <p class="mx-auto mt-2 max-w-md text-[13px] leading-relaxed text-text-secondary">
+            The Offline Training calculator on the home page takes your
+            vocation, current skill, % to next, and target — returns
+            exact offline-time-to-target and parallel shielding gain.
+          </p>
+          <a
+            href="/#training"
+            class="mt-4 inline-flex items-center gap-2 rounded px-5 py-2 text-[12px] font-medium text-bg-primary transition-opacity hover:opacity-90"
+            style="background: linear-gradient(135deg, #9B8AFB 0%, #5DCAE8 100%);"
+          >
+            Open Offline Training →
+          </a>
+        </div>
+      </article>
+
+      <!-- Sticky sidebar -->
+      <aside class="hidden lg:block">
+        <div class="sticky top-32 space-y-4">
+          <nav class="rounded-md border border-border-subtle bg-bg-surface p-4">
+            <p class="text-[10px] uppercase tracking-wider text-text-tertiary">
+              On this page
+            </p>
+            <ul class="mt-2 space-y-1 text-[12px] text-text-secondary">
+              <li><a href="#what" class="hover:text-accent-violet">1. What it is</a></li>
+              <li><a href="#pool" class="hover:text-accent-violet">2. The 12-hour pool</a></li>
+              <li><a href="#delay" class="hover:text-accent-violet">3. 10-min logout delay</a></li>
+              <li><a href="#statues" class="hover:text-accent-violet">4. Statue choices</a></li>
+              <li><a href="#shielding" class="hover:text-accent-violet">5. Shielding parallel</a></li>
+              <li><a href="#vocations" class="hover:text-accent-violet">6. Vocation impact</a></li>
+              <li><a href="#bonuses" class="hover:text-accent-violet">7. Loyalty &amp; events</a></li>
+              <li><a href="#free-cap" class="hover:text-accent-violet">8. Free caps</a></li>
+              <li><a href="#strategy" class="hover:text-accent-violet">9. Strategy</a></li>
+            </ul>
+          </nav>
+
+          <div class="rounded-md border border-accent-violet/40 bg-accent-violet/5 p-4 text-center">
+            <p class="text-[10px] uppercase tracking-wider text-accent-violet">
+              Offline Training calc
+            </p>
+            <p class="mx-auto mt-2 text-[12px] leading-relaxed text-text-secondary">
+              Time-to-target + shielding gain, instant.
+            </p>
+            <a
+              href="/#training"
+              class="mt-3 inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-[11px] font-medium text-bg-primary transition-opacity hover:opacity-90"
+              style="background: linear-gradient(135deg, #9B8AFB 0%, #5DCAE8 100%);"
+            >
+              Open it →
+            </a>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="mt-8 flex justify-center gap-3">
+      <a
+        href="/guides"
+        class="rounded border border-border-subtle bg-bg-sunken px-4 py-2 text-[12px] text-text-secondary transition-colors hover:border-border-emphasis hover:text-text-primary"
+      >
+        ← All guides
+      </a>
+      <a
+        href="/"
+        class="rounded border border-border-subtle bg-bg-sunken px-4 py-2 text-[12px] text-text-secondary transition-colors hover:border-border-emphasis hover:text-text-primary"
+      >
+        ← Back to TibiaPlan
+      </a>
+    </div>
+  </main>
+
+  <Footer />
+</Layout>

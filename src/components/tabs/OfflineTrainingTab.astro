@@ -1,0 +1,263 @@
+---
+/**
+ * Offline Training calculator — wired to offlineTrainingTab.ts module
+ * (Phase 2: math live). Visual structure mirrors TrainingTab so the
+ * two sub-tabs feel identical.
+ *
+ * Results panel: 2 cards (Training time · Real-world cadence) and a
+ * smaller note for the parallel Shielding gain. Numbers stay
+ * provisional until Phase 3 cross-verifies against TibiaPal — a small
+ * gold warning above the result is shown to set expectations.
+ */
+---
+
+<div x-data="offlineTrainingTab">
+  <div class="flex items-center justify-between gap-4">
+    <h2 class="text-[14px] font-medium tracking-wide text-text-primary">Offline Training Calculator</h2>
+    <div class="flex items-center gap-3">
+      <a
+        href="/guides/tibia-offline-training"
+        class="text-[10px] text-text-tertiary transition-colors hover:text-accent-violet"
+      >
+        Read guide →
+      </a>
+      <span
+        x-show="vocation"
+        x-cloak
+        class="text-[10px] uppercase tracking-[0.1em] text-text-tertiary"
+      >
+        Vocation: <span x-text="vocation" class="capitalize text-text-secondary"></span>
+      </span>
+    </div>
+  </div>
+
+  <!-- Empty state: no vocation -->
+  <div
+    x-show="!vocation"
+    class="mt-6 rounded border border-dashed border-border-subtle bg-bg-sunken p-6 text-center text-[12px] text-text-secondary"
+  >
+    Pick a vocation in your
+    <a href="#character-sheet" class="text-accent-violet underline">Character Sheet</a>
+    to use the offline training calculator.
+  </div>
+
+  <!-- Main content -->
+  <div x-show="vocation" x-cloak class="mt-6 space-y-6">
+    <!-- Inputs grid — same shape as Exercise Weapons -->
+    <div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
+      <label class="block">
+        <span class="mb-1 block text-[10px] uppercase tracking-wider text-text-tertiary">Skill to train</span>
+        <select
+          x-model="skill"
+          @change="onSkillChange()"
+          class="w-full rounded border border-border-subtle bg-bg-sunken px-3 py-1.5 text-[12px] text-text-primary focus:border-accent-violet focus:outline-none"
+        >
+          <option value="">Select skill</option>
+          <template x-for="s in OFFLINE_SKILLS" :key="s">
+            <option :value="s" x-text="s"></option>
+          </template>
+        </select>
+      </label>
+
+      <label class="block">
+        <span class="mb-1 block text-[10px] uppercase tracking-wider text-text-tertiary">Current skill</span>
+        <input
+          type="number"
+          min="0"
+          step="1"
+          x-model.number="currentSkill"
+          @input.debounce.250ms="save()"
+          placeholder="—"
+          class="w-full rounded border border-border-subtle bg-bg-sunken px-3 py-1.5 text-[12px] text-text-primary focus:border-accent-violet focus:outline-none"
+        />
+      </label>
+
+      <label class="block">
+        <span class="mb-1 block text-[10px] uppercase tracking-wider text-text-tertiary">% to next</span>
+        <input
+          type="number"
+          min="0"
+          max="100"
+          step="0.01"
+          x-model.number="pctToNext"
+          @input.debounce.250ms="save()"
+          placeholder="0–100"
+          class="w-full rounded border border-border-subtle bg-bg-sunken px-3 py-1.5 text-[12px] text-text-primary focus:border-accent-violet focus:outline-none"
+        />
+      </label>
+
+      <label class="block">
+        <span class="mb-1 block text-[10px] uppercase tracking-wider text-text-tertiary">Target skill</span>
+        <input
+          type="number"
+          min="1"
+          step="1"
+          x-model.number="targetSkill"
+          @input.debounce.250ms="save()"
+          placeholder="—"
+          class="w-full rounded border border-border-subtle bg-bg-sunken px-3 py-1.5 text-[12px] text-text-primary focus:border-accent-violet focus:outline-none"
+        />
+      </label>
+    </div>
+
+    <!-- Modifiers row — Double Exp + Loyalty are the two that apply to
+         in-game statue training. Private dummy and TC threshold belong
+         to Exercise Weapons only and are intentionally absent. -->
+    <div class="flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-border-subtle pt-4 text-[11px] text-text-secondary">
+      <label class="flex cursor-pointer items-center gap-2">
+        <input
+          type="checkbox"
+          x-model="doubleEvent"
+          @change="save()"
+          class="h-4 w-4 rounded border-border-subtle bg-bg-sunken accent-accent-violet"
+        />
+        <span>Double Exp/Skill event</span>
+      </label>
+
+      <label class="flex items-center gap-2">
+        <span>Loyalty</span>
+        <select
+          x-model.number="loyalty"
+          @change="save()"
+          class="rounded border border-border-subtle bg-bg-sunken px-2 py-1 text-[11px] text-text-primary focus:border-accent-violet focus:outline-none"
+        >
+          <template x-for="opt in LOYALTY_OPTIONS" :key="opt">
+            <option :value="opt" x-text="`${opt}%`"></option>
+          </template>
+        </select>
+      </label>
+    </div>
+
+    <!-- Calculate button row -->
+    <div class="flex items-center gap-3 border-t border-border-subtle pt-4">
+      <button
+        type="button"
+        @click="onCalculate()"
+        class="rounded px-5 py-2 text-[12px] font-medium transition-opacity hover:opacity-90"
+        :class="isValid ? 'is-active' : 'border border-border-subtle bg-bg-sunken text-text-secondary'"
+      >
+        <span x-text="showResults ? 'Recalculate' : 'Calculate'"></span>
+      </button>
+      <span
+        x-show="!showResults && !isValid"
+        class="text-[11px] text-text-tertiary"
+      >
+        Fill the inputs and press Calculate to see your offline training plan.
+      </span>
+      <span
+        x-show="showResults && !isValid"
+        x-cloak
+        class="text-[11px] text-danger"
+        x-text="fieldError"
+      ></span>
+    </div>
+
+    <!-- Results -->
+    <div x-show="showResults && isValid" x-cloak class="space-y-4">
+      <!-- Main result card -->
+      <article class="rounded-md border-2 border-accent-violet/40 bg-bg-sunken p-6 text-center">
+        <h3 class="text-[10px] uppercase tracking-wider text-accent-violet">
+          Offline training needed
+        </h3>
+        <p
+          class="mt-2 text-[28px] font-semibold text-accent-cyan"
+          x-text="result?.trainingDisplay ?? '—'"
+        ></p>
+      </article>
+
+      <!-- Shielding sub-form: opt-in. Shielding always trains in parallel
+           at HALF the main rate, but the "you'd end at X" answer is only
+           meaningful if we know where you start — so we ask for it on
+           demand instead of guessing zero. Loyalty is reused from the
+           parent form, no target skill since this is informational. -->
+      <article class="rounded-md border border-border-subtle bg-bg-sunken">
+        <button
+          type="button"
+          @click="toggleShielding()"
+          class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-bg-surface"
+          :aria-expanded="shieldingOpen ? 'true' : 'false'"
+        >
+          <span class="text-[12px] font-medium text-text-primary">
+            Want to know how much your shielding would advance too?
+          </span>
+          <span
+            class="text-[12px] text-text-tertiary transition-transform"
+            :class="shieldingOpen ? 'rotate-180' : ''"
+            aria-hidden="true"
+          >
+            ▾
+          </span>
+        </button>
+
+        <div x-show="shieldingOpen" x-cloak class="border-t border-border-subtle p-4">
+          <p class="mb-3 text-[11px] leading-relaxed text-text-tertiary">
+            Shielding trains in parallel at half the rate of the main skill.
+            Tell us where you stand and we&apos;ll project where you&apos;d land
+            after the same training period (loyalty reused from above).
+          </p>
+
+          <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <label class="block">
+              <span class="mb-1 block text-[10px] uppercase tracking-wider text-text-tertiary">Current shielding</span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                x-model.number="shieldingCurrent"
+                @input.debounce.250ms="save()"
+                placeholder="—"
+                class="w-full rounded border border-border-subtle bg-bg-surface px-3 py-1.5 text-[12px] text-text-primary focus:border-accent-violet focus:outline-none"
+              />
+            </label>
+
+            <label class="block">
+              <span class="mb-1 block text-[10px] uppercase tracking-wider text-text-tertiary">% to next</span>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                x-model.number="shieldingPctToNext"
+                @input.debounce.250ms="save()"
+                placeholder="0–100"
+                class="w-full rounded border border-border-subtle bg-bg-surface px-3 py-1.5 text-[12px] text-text-primary focus:border-accent-violet focus:outline-none"
+              />
+            </label>
+          </div>
+
+          <!-- Result line: only when both fields are filled and valid -->
+          <p
+            x-show="shieldingResult"
+            x-cloak
+            class="mt-4 text-[12px] leading-relaxed text-text-secondary"
+          >
+            Over the same period, your shielding would end at
+            <span class="font-semibold text-accent-cyan">
+              level <span x-text="shieldingResult?.finalLevel ?? 0"></span>
+            </span>
+            at
+            <span class="font-mono text-text-primary" x-text="shieldingResult?.finalPct.toFixed(2) ?? '0.00'"></span>%
+            of the next
+            <span
+              x-show="(shieldingResult?.levelsGained ?? 0) > 0"
+              x-cloak
+              class="text-text-tertiary"
+            >
+              (+<span x-text="shieldingResult?.levelsGained ?? 0"></span> levels gained).
+            </span>
+            <span x-show="(shieldingResult?.levelsGained ?? 0) === 0" x-cloak class="text-text-tertiary">
+              (no full level gained — just % progress).
+            </span>
+          </p>
+
+          <p
+            x-show="shieldingOpen && shieldingFilled && !shieldingResult"
+            x-cloak
+            class="mt-4 text-[11px] text-danger"
+            x-text="shieldingFieldError"
+          ></p>
+        </div>
+      </article>
+    </div>
+  </div>
+</div>

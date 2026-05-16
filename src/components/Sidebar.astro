@@ -9,7 +9,13 @@ import GuildPromo from "./GuildPromo.astro";
 
   <DromeTimer />
 
-  <AdSlot width={300} height={200} />
+  <!--
+    Ad slot. Height bumped from 200 to 270 (1/3 taller per the owner's
+    request) so the sidebar reaches closer to the bottom of the main
+    column on tall tabs without needing a second widget. Advertisers
+    design at 300×270.
+  -->
+  <AdSlot width={300} height={270} />
 
   <!--
     Hunt history card. Lives in the sidebar so the textarea + results panels

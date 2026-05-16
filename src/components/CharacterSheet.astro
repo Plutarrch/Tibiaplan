@@ -301,6 +301,56 @@ import { VOCATIONS } from "../data/skills";
           </div>
         </template>
       </div>
+
+      <!--
+        Stamina mini-calc. Lives below Bless because it shares the same
+        "personal-character status" mental model (it's about your in-game
+        rest, not the death simulator). Pure input + reactive output, no
+        button: math recomputes as you type and persists on blur.
+      -->
+      <div>
+        <div class="flex items-center justify-between gap-2">
+          <h3 class="text-[12px] font-medium text-text-primary">Stamina</h3>
+          <span class="text-[10px] text-text-tertiary">How long to 42:00</span>
+        </div>
+
+        <div class="mt-2 grid grid-cols-[140px_auto_minmax(0,1fr)] items-end gap-3">
+          <label class="block">
+            <span class="mb-1 block text-[10px] uppercase tracking-wider text-text-tertiary">
+              Current
+            </span>
+            <input
+              type="text"
+              inputmode="numeric"
+              maxlength="5"
+              :value="staminaInput"
+              @input="staminaInput = formatStaminaInput($event.target.value)"
+              @blur="onStaminaChange()"
+              @keydown.enter.prevent="onStaminaChange(); $event.target.blur()"
+              placeholder="HH:MM"
+              class="w-full rounded border border-border-subtle bg-bg-sunken px-2 py-1 text-[12px] text-text-primary placeholder:text-text-tertiary focus:border-accent-violet focus:outline-none"
+            />
+          </label>
+          <span class="pb-1.5 text-[14px] text-text-tertiary" aria-hidden="true">→</span>
+          <div class="min-w-0">
+            <span class="mb-1 block text-[10px] uppercase tracking-wider text-text-tertiary">
+              Offline needed
+            </span>
+            <p
+              class="truncate text-[14px] font-semibold"
+              :class="staminaTimeToMax ? 'text-accent-cyan' : 'text-text-tertiary'"
+              x-text="staminaTimeToMax || '—'"
+            ></p>
+          </div>
+        </div>
+
+        <a
+          href="/guides/tibia-stamina"
+          class="mt-2 block text-[10px] text-text-tertiary transition-colors hover:text-accent-violet"
+        >
+          Read guide →
+        </a>
+      </div>
     </div>
   </div>
 
