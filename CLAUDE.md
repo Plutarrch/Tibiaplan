@@ -175,10 +175,11 @@ After Phase 3: site has parity with TibiaPal's most-used tool, plus our differen
 
 ### Phase 4 — Imbuements (frequently searched, low maintenance)
 
-7. **Imbuements Reference Tab**:
-   - 3 sections: Utility (Vampirism/Void/Strike), Damage Skills (Slash/Chop/Bash/Precision/Epiphany/Knock), Protection (Dragon Hide/Frost/Reflection/Lich Shroud/Snake Skin/Lethargy)
-   - Each card: name + sub-name, sprite placeholder, 3 tier buttons, ingredient list, NPC price
-   - Click tier → updates ingredients and price (10k/25k/250k gp)
+7. **Imbuements Reference Tab**: ✅ shipped
+   - 5 sections: Combat (Vampirism/Void/Strike), Skill Boost (Slash/Chop/Bash/Precision/Punch/Blockade/Epiphany), Elemental Damage (Scorch/Venom/Frost/Electrify/Reap), Elemental Protection (Dragon Hide/Quara Scale/Lich Shroud/Cloud Fabric/Snake Skin/Demon Presence), Support (Featherweight/Swiftness/Vibrancy)
+   - Each card: name + affects, sprite, 3 tier buttons, ingredient list, NPC fee
+   - NPC fee per tier: Basic 7,500 — Intricate 60,000 — Powerful 250,000 gp (or 2/4/6 Gold Tokens at the shrine)
+   - Data verified 2026-05-13 from tibia.com library screenshots
 
 After Phase 4: MVP is feature-complete. Site can stay like this indefinitely while traffic grows.
 
@@ -334,44 +335,26 @@ const ALL_SKILLS = ['Magic level', 'Sword', 'Axe', 'Club', 'Distance', 'Shieldin
 
 ## Imbuement data
 
-```js
-const IMBUEMENTS = {
-  utility: [
-    { name: 'Vampirism', sub: 'Life Leech',
-      basic:     [['Vampire Teeth', 25]],
-      intricate: [['Vampire Teeth', 25], ['Bloody Pincers', 15]],
-      powerful:  [['Vampire Teeth', 25], ['Bloody Pincers', 15], ['Dead Snake', 5]] },
-    { name: 'Void', sub: 'Mana Leech',
-      basic:     [['Rope Belts', 25]],
-      intricate: [['Rope Belts', 25], ['Silencer Claws', 15]],
-      powerful:  [['Rope Belts', 25], ['Silencer Claws', 15], ['Grimeleech Wings', 5]] },
-    { name: 'Strike', sub: 'Critical',
-      basic:     [['Cyclops Toes', 20]],
-      intricate: [['Cyclops Toes', 25], ['Vexclaws', 15]],
-      powerful:  [['Cyclops Toes', 25], ['Vexclaws', 15], ['Cobra Tongues', 5]] }
-  ],
-  damage: [
-    { name: 'Slash',     sub: 'Sword' },
-    { name: 'Chop',      sub: 'Axe' },
-    { name: 'Bash',      sub: 'Club' },
-    { name: 'Precision', sub: 'Distance' },
-    { name: 'Epiphany',  sub: 'Magic Level' },
-    { name: 'Knock',     sub: 'Fist' }
-  ],
-  protection: [
-    { name: 'Dragon Hide', sub: 'Fire' },
-    { name: 'Frost',       sub: 'Ice' },
-    { name: 'Lich Shroud', sub: 'Death' },
-    { name: 'Reflection',  sub: 'Energy' },
-    { name: 'Snake Skin',  sub: 'Earth' },
-    { name: 'Lethargy',    sub: 'Holy' }
-  ]
-};
+Canonical source: [`src/data/imbuements.ts`](src/data/imbuements.ts). 24 imbuements across 5 categories with full Basic/Intricate/Powerful ingredient lists, bonus copy per tier, and shared NPC fee/Gold Token tables. All tiers verified 2026-05-13 against owner-supplied tibia.com library screenshots.
 
-const IMBUE_PRICES = { basic: '10,000', intricate: '25,000', powerful: '250,000' }; // gp
+Quick reference (shape only — read the data file for the actual values):
+
+```ts
+export interface Imbuement {
+  name: string;
+  affects: string;
+  bonus: { basic: string; intricate: string; powerful: string };
+  ingredients: {
+    basic:     readonly { name: string; qty: number }[];
+    intricate: readonly { name: string; qty: number }[];
+    powerful:  readonly { name: string; qty: number }[]; // cumulative
+  };
+}
 ```
 
-**TODO before Phase 4 launch**: Verify ingredient lists for damage and protection imbuements against TibiaPal data or TibiaWiki. Damage and Protection arrays above only have `name` and `sub` — need to add `basic`/`intricate`/`powerful` ingredient arrays. This can be done gradually.
+NPC fee per tier is uniform across all 24 imbuements: 7,500 / 60,000 / 250,000 gp (or 2/4/6 Gold Tokens at the shrine).
+
+Known data-quality caveat baked into the file: **Punch** is the lone exception to the "cumulative qty" rule — Intricate uses 20 Tarantula Eggs / 25 Mantassin Tails, but Powerful flips to 25/20. Reproduced verbatim from tibia.com so the cost calc matches the in-game NPC.
 
 ---
 
@@ -530,11 +513,9 @@ No automated tests for now. Solo dev project — tests add maintenance burden th
 
 ## Known unknowns (TODO, no rush)
 
-- [ ] Verify Imbuement ingredient lists for Damage and Protection imbuements (Utility list is in this doc; Damage/Protection arrays only have `name`/`sub`)
-- [ ] Verify the **gp** prices listed for Imbuements (10k/25k/250k) against current TibiaWiki — those numbers are old and may have moved
-- [ ] Decide final domain name and logo (placeholder: "TibiaPlan" wordmark + logo PNG already in /public)
-- [ ] Source for sprites (Phase 5+): apply to Tibia fansite program
-- [ ] Add Mirra image at `/public/mirra.png` for the donate page (currently a CSS placeholder)
+- [ ] Spanish translation (i18n) — biggest unblocked growth lever; LATAM market is underserved (Venezuela/Mexico/Argentina/Chile/Spain) and TibiaPal only covers Portuguese + English
+- [ ] Source for sprites (Phase 5+): apply to Tibia fansite program (note: owner overrides this and uses CipSoft sprites from day 1, but official approval would unlock more)
+- [ ] Sprite gaps to fill in Imbuements: Blockade / Featherweight / Swiftness / Vibrancy still missing
 - [ ] Consider showing the **% to next** UX label more prominently — both the Training calc and the Death-sim skill-loss table interpret it as "% completed" (in-game value), but the Training calc result still says "X% remaining → next level". Not a bug, but could be confusing for users who haven't read the labels carefully
 
 ---
