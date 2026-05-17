@@ -1,0 +1,207 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+
+// Same email-obfuscation pattern used on /advertise — keep the raw
+// address out of the rendered HTML to slow down casual scrapers.
+const CONTACT_EMAIL = "aguirrecabralespatricio@gmail.com";
+const EMAIL_SUBJECT = "TibiaPlan — Contact";
+const EMAIL_B64 = btoa(CONTACT_EMAIL);
+
+const DISCORD_DM_URL = "https://discord.com/users/1214064198103998468";
+const GITHUB_URL = "https://github.com/Plutarrch/TibiaPlan";
+
+// Fields presented here are exactly what the Tibia Fansite Agreement
+// (point 2) requires public on the site: creator name + a contact
+// address. The Tibia character is included because point 3 expects
+// CipSoft to be able to identify the contact person in-game.
+---
+
+<Layout
+  title="About TibiaPlan — Creator, Contact & Tibia Character"
+  description="About TibiaPlan: who built it, why, and how to reach us. Free Tibia helper site focused on the LATAM community, built by a single player."
+  keywords={["about tibiaplan", "tibia fansite", "tibia helper site"]}
+>
+  <Header />
+
+  <main class="mx-auto max-w-3xl px-4 py-12">
+    <article class="rounded-md border border-border-subtle bg-bg-surface p-8 sm:p-12">
+      <header class="text-center">
+        <p class="text-[10px] uppercase tracking-[0.2em] text-accent-violet">
+          About
+        </p>
+        <h1 class="mt-2 text-[24px] font-medium tracking-wide text-text-primary">
+          About TibiaPlan
+        </h1>
+        <p class="mx-auto mt-3 max-w-lg text-[13px] leading-relaxed text-text-secondary">
+          A free Tibia helper site — calculators, references, and guides —
+          built and maintained by a single player who cares about the game.
+        </p>
+      </header>
+
+      <!-- What this is -->
+      <section class="mt-10">
+        <h2 class="text-[14px] font-medium text-text-primary">What TibiaPlan is</h2>
+        <p class="mt-2 text-[13px] leading-relaxed text-text-secondary">
+          TibiaPlan is an unofficial Tibia helper website with calculators
+          (training, offline training, loot split, death penalty, stamina),
+          an imbuements reference, character sheet utilities, and
+          long-form guides explaining the math behind the game's
+          mechanics. Everything is free, no account is required, and
+          everything you input stays in your browser via
+          <span class="font-mono text-[12px]">localStorage</span>.
+        </p>
+        <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+          The site is built to be fast on slow connections and old PCs —
+          a deliberate choice given the predominantly Latin American
+          audience we aim to serve.
+        </p>
+      </section>
+
+      <!-- Creator / contact -->
+      <section class="mt-10">
+        <h2 class="text-[14px] font-medium text-text-primary">Creator &amp; contact</h2>
+
+        <dl class="mt-4 grid grid-cols-1 gap-y-3 text-[13px] sm:grid-cols-[160px_1fr]">
+          <dt class="text-text-tertiary">Creator</dt>
+          <dd class="text-text-primary">Patricio Aguirre</dd>
+
+          <dt class="text-text-tertiary">Location</dt>
+          <dd class="text-text-primary">Monterrey, México</dd>
+
+          <dt class="text-text-tertiary">Tibia character</dt>
+          <dd class="text-text-primary">
+            Mirra — <span class="text-text-secondary">Quidera</span>
+          </dd>
+
+          <dt class="text-text-tertiary">Contact</dt>
+          <dd class="text-text-primary">
+            <button
+              type="button"
+              id="about-email-btn"
+              data-e={EMAIL_B64}
+              data-s={EMAIL_SUBJECT}
+              class="inline-flex items-center gap-1.5 rounded border border-accent-violet/40 bg-accent-violet/10 px-3 py-1 text-[12px] font-medium text-accent-violet transition-colors hover:bg-accent-violet hover:text-bg-primary"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="h-3.5 w-3.5"
+                aria-hidden="true"
+              >
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <path d="m22 7-10 5L2 7" />
+              </svg>
+              <span data-email-label>Email</span>
+            </button>
+            &nbsp;·&nbsp;
+            <a
+              href={DISCORD_DM_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-accent-violet underline-offset-2 hover:underline"
+            >
+              Discord DM
+            </a>
+          </dd>
+
+          <dt class="text-text-tertiary">Source code</dt>
+          <dd class="text-text-primary">
+            <a
+              href={GITHUB_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-accent-violet underline-offset-2 hover:underline"
+            >
+              github.com/Plutarrch/TibiaPlan
+            </a>
+          </dd>
+        </dl>
+      </section>
+
+      <!-- Why it exists -->
+      <section class="mt-10">
+        <h2 class="text-[14px] font-medium text-text-primary">Why this exists</h2>
+        <p class="mt-2 text-[13px] leading-relaxed text-text-secondary">
+          The Latin American Tibia community — Venezuela, México, Argentina,
+          Chile, Spain — is large but underserved by existing helper sites,
+          most of which are English- or Portuguese-first. TibiaPlan starts
+          in English to reach the widest audience and will be translated
+          to Spanish as the project grows. The longer-term goal is to
+          become the go-to Spanish-first reference for LATAM players.
+        </p>
+        <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+          The site is a side project, run by one person, with no investors
+          and no monetisation pressure. It will keep being free.
+        </p>
+      </section>
+
+      <!-- Copyright / fansite status -->
+      <section class="mt-10">
+        <h2 class="text-[14px] font-medium text-text-primary">Copyright &amp; fansite status</h2>
+        <p class="mt-2 text-[13px] leading-relaxed text-text-secondary">
+          Tibia and all related sprites, names, lore, and assets are
+          © <a href="https://www.cipsoft.com" target="_blank" rel="noopener noreferrer" class="text-accent-violet hover:underline">CipSoft GmbH</a>.
+          TibiaPlan is an unofficial fansite and is not affiliated with or
+          endorsed by CipSoft. All game content references are made for
+          informational and helper-tool purposes only.
+        </p>
+        <p class="mt-3 text-[13px] leading-relaxed text-text-secondary">
+          The site reproduces in-game numbers, formulas, and rules
+          accurately to the best of our ability and corrects them as soon
+          as discrepancies are found. If you spot something wrong, please
+          reach out via email or Discord.
+        </p>
+      </section>
+
+      <div class="mt-10 flex justify-center border-t border-border-subtle pt-6">
+        <a
+          href="/"
+          class="rounded border border-border-subtle bg-bg-sunken px-4 py-2 text-[12px] text-text-secondary transition-colors hover:border-border-emphasis hover:text-text-primary"
+        >
+          ← Back to TibiaPlan
+        </a>
+      </div>
+    </article>
+  </main>
+
+  <Footer />
+</Layout>
+
+<script>
+  // Wire up the obfuscated email button. Same handler shape as /advertise.
+  function bindAboutEmailButton() {
+    const btn = document.getElementById("about-email-btn");
+    if (!btn || btn.dataset.bound === "true") return;
+    btn.dataset.bound = "true";
+
+    btn.addEventListener("click", async () => {
+      const email = atob(btn.dataset.e || "");
+      const subject = encodeURIComponent(btn.dataset.s || "");
+      const label = btn.querySelector("[data-email-label]");
+      const originalText = label?.textContent ?? "Email";
+
+      try {
+        await navigator.clipboard.writeText(email);
+        if (label) label.textContent = "Copied to clipboard";
+      } catch {
+        if (label) label.textContent = "Try Discord instead";
+      }
+
+      window.location.href = "mailto:" + email + "?subject=" + subject;
+
+      setTimeout(() => {
+        if (label) label.textContent = originalText;
+      }, 5000);
+    });
+  }
+
+  bindAboutEmailButton();
+  document.addEventListener("astro:page-load", bindAboutEmailButton);
+</script>
