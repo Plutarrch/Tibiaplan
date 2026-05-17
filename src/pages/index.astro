@@ -8,7 +8,6 @@ import CharacterSheet from "../components/CharacterSheet.astro";
 import TrainingTab from "../components/tabs/TrainingTab.astro";
 import OfflineTrainingTab from "../components/tabs/OfflineTrainingTab.astro";
 import LootSplitTab from "../components/tabs/LootSplitTab.astro";
-import LevelingTab from "../components/tabs/LevelingTab.astro";
 import ImbuementsTab from "../components/tabs/ImbuementsTab.astro";
 import CharacterSearchTab from "../components/tabs/CharacterSearchTab.astro";
 
@@ -154,22 +153,6 @@ const structuredData = {
                 />
                 <span>Character Search</span>
               </button>
-              <button
-                type="button"
-                class="flex items-center gap-2 rounded px-3 py-2 text-[12px] transition-colors"
-                :class="active === 'leveling' ? 'is-active' : 'border border-border-subtle bg-bg-surface text-text-secondary hover:border-border-emphasis hover:text-text-primary'"
-                @click="setActive('leveling')"
-              >
-                <img
-                  src="/sprites/tabs/leveling.gif"
-                  alt=""
-                  class="h-9 w-9 object-contain"
-                  loading="lazy"
-                  decoding="async"
-                  onerror="this.style.display='none'"
-                />
-                <span>Leveling</span>
-              </button>
             </nav>
 
             <div class="mt-4">
@@ -241,10 +224,6 @@ const structuredData = {
 
               <div x-show="active === 'character-search'" x-cloak>
                 <CharacterSearchTab />
-              </div>
-
-              <div x-show="active === 'leveling'" x-cloak>
-                <LevelingTab />
               </div>
 
               <!--
