@@ -34,7 +34,7 @@ export interface TrainableSkill {
 
 /**
  * Vocation constant for every skill that appears in SKILLS_BY_VOCATION.
- * Used by the death-skill-loss calculator to convert "skill X at Y% to next"
+ * Used by the death-skill-loss calculator to convert "skill X at Y% to go"
  * into total accumulated tries and back. Values match TRAINING_BY_VOCATION
  * for skills exercise weapons can raise; Shielding uses the standard 1.1
  * (TibiaWiki: same exponential as melee skills, just trained differently).

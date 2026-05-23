@@ -38,7 +38,8 @@ export const LOYALTY_OPTIONS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50] as con
 interface PersistedOfflineTraining {
   skill: OfflineSkill | "";
   currentSkill: number | null;
-  pctToNext: number | null;
+  /** In-game "% to go" — see trainingCalc.ts docstring for the convention. */
+  pctToGo: number | null;
   targetSkill: number | null;
   doubleEvent: boolean;
   loyalty: number;
@@ -46,21 +47,21 @@ interface PersistedOfflineTraining {
   /** Shielding-advance opt-in sub-form. */
   shieldingOpen: boolean;
   shieldingCurrent: number | null;
-  shieldingPctToNext: number | null;
+  shieldingPctToGo: number | null;
 }
 
 function defaults(): PersistedOfflineTraining {
   return {
     skill: "",
     currentSkill: null,
-    pctToNext: null,
+    pctToGo: null,
     targetSkill: null,
     doubleEvent: false,
     loyalty: 0,
     showResults: false,
     shieldingOpen: false,
     shieldingCurrent: null,
-    shieldingPctToNext: null,
+    shieldingPctToGo: null,
   };
 }
 
@@ -122,14 +123,14 @@ export function offlineTrainingTab() {
       const snapshot: PersistedOfflineTraining = {
         skill: this.skill,
         currentSkill: this.currentSkill,
-        pctToNext: this.pctToNext,
+        pctToGo: this.pctToGo,
         targetSkill: this.targetSkill,
         doubleEvent: this.doubleEvent,
         loyalty: this.loyalty,
         showResults: this.showResults,
         shieldingOpen: this.shieldingOpen,
         shieldingCurrent: this.shieldingCurrent,
-        shieldingPctToNext: this.shieldingPctToNext,
+        shieldingPctToGo: this.shieldingPctToGo,
       };
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
@@ -158,12 +159,12 @@ export function offlineTrainingTab() {
         if (this.skill && !this._skillValidForVocation(this.skill)) {
           this.skill = "";
           this.currentSkill = null;
-          this.pctToNext = null;
+          this.pctToGo = null;
           this.targetSkill = null;
           this.showResults = false;
           this.shieldingOpen = false;
           this.shieldingCurrent = null;
-          this.shieldingPctToNext = null;
+          this.shieldingPctToGo = null;
           this.save();
         }
       }
@@ -212,7 +213,7 @@ export function offlineTrainingTab() {
     get shieldingFilled(): boolean {
       return (
         this.shieldingCurrent != null &&
-        this.shieldingPctToNext != null
+        this.shieldingPctToGo != null
       );
     },
 
@@ -238,14 +239,14 @@ export function offlineTrainingTab() {
       const main = this.result;
       if (!main) return null;
       if (!this.vocation || !this.skill) return null;
-      if (this.shieldingCurrent == null || this.shieldingPctToNext == null) {
+      if (this.shieldingCurrent == null || this.shieldingPctToGo == null) {
         return null;
       }
       return {
         vocation: this.vocation,
         mainSkill: this.skill as OfflineSkill,
         currentShielding: this.shieldingCurrent,
-        pctToNext: this.shieldingPctToNext,
+        pctToGo: this.shieldingPctToGo,
         loyalty: this.loyalty,
         trainingMinutes: main.trainingMinutes,
       };
@@ -266,7 +267,7 @@ export function offlineTrainingTab() {
       if (!this.vocation || !this.skill) return null;
       if (
         this.currentSkill == null ||
-        this.pctToNext == null ||
+        this.pctToGo == null ||
         this.targetSkill == null
       ) {
         return null;
@@ -275,7 +276,7 @@ export function offlineTrainingTab() {
         vocation: this.vocation,
         skill: this.skill as OfflineSkill,
         currentSkill: this.currentSkill,
-        pctToNext: this.pctToNext,
+        pctToGo: this.pctToGo,
         targetSkill: this.targetSkill,
         loyalty: this.loyalty,
       };

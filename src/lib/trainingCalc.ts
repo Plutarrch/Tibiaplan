@@ -26,19 +26,23 @@ function totalPointsAtSkill(
 export interface PointsNeededInput {
   vocationConstant: number;
   currentSkill: number;
-  pctToNext: number;
+  pctToGo: number;
   targetSkill: number;
 }
 
 /**
  * Points needed to advance from current skill to target.
  *
- * Convention for `pctToNext` matches the in-game skill display (the value
- * Tibia shows next to your skill, e.g. "Sword 80 (42.50%)"):
- *     0 = just dinged this skill — no progress yet toward the next level
- *   100 = effectively at the next level
+ * Convention for `pctToGo` matches the in-game skill display verbatim:
+ * Tibia tells you "You have ##.##% to go" toward the next skill level, so
+ *     0   = effectively at the next level (about to ding)
+ *   100   = just dinged this skill — full level still ahead
  *
- * I.e. pctToNext is the % of the current level that is ALREADY trained.
+ * I.e. pctToGo is the % of the current span that is STILL REMAINING. This
+ * is the opposite of "% trained" — copying the in-game number directly
+ * into our forms is the user expectation. We previously inverted this and
+ * silently over-recommended weapons by ~50% on most inputs (fixed
+ * 2026-05-23 after side-by-side comparison with TibiaPal showed the bug).
  */
 export function pointsNeeded(input: PointsNeededInput): number {
   const totalAtCurrent = totalPointsAtSkill(
@@ -49,8 +53,8 @@ export function pointsNeeded(input: PointsNeededInput): number {
     input.vocationConstant,
     input.currentSkill + 1,
   );
-  const pctCompleted = Math.max(0, Math.min(100, input.pctToNext));
-  const trained = (totalAtNext - totalAtCurrent) * (pctCompleted / 100);
+  const pctRemaining = Math.max(0, Math.min(100, input.pctToGo));
+  const trained = (totalAtNext - totalAtCurrent) * (1 - pctRemaining / 100);
   const startPoints = totalAtCurrent + trained;
   const targetPoints = totalPointsAtSkill(
     input.vocationConstant,
@@ -63,12 +67,12 @@ export function pointsNeeded(input: PointsNeededInput): number {
 function startPointsFor(
   vocationConstant: number,
   currentSkill: number,
-  pctToNext: number,
+  pctToGo: number,
 ): number {
   const totalAtCurrent = totalPointsAtSkill(vocationConstant, currentSkill);
   const totalAtNext = totalPointsAtSkill(vocationConstant, currentSkill + 1);
-  const pctCompleted = Math.max(0, Math.min(100, pctToNext));
-  const trained = (totalAtNext - totalAtCurrent) * (pctCompleted / 100);
+  const pctRemaining = Math.max(0, Math.min(100, pctToGo));
+  const trained = (totalAtNext - totalAtCurrent) * (1 - pctRemaining / 100);
   return totalAtCurrent + trained;
 }
 
@@ -126,7 +130,7 @@ export function computeSingleWeaponResult(
   pointsRequired: number,
   vocationConstant: number,
   currentSkill: number,
-  pctToNext: number,
+  pctToGo: number,
   weaponType: WeaponType,
   mods: Modifiers,
   tcMarketPriceGp: number,
@@ -135,11 +139,13 @@ export function computeSingleWeaponResult(
   // would overflow into Infinity / NaN, which can pin the page (millions
   // of weapons "needed" would also blow up the formatter downstream).
   if (!Number.isFinite(pointsRequired) || pointsRequired <= 0) {
+    // endPct in the result is "% trained" (the inverse of pctToGo input)
+    // so the caller's display formatter can render "X% remaining → N+1".
     return {
       weapons: 0,
       totalPointsGained: 0,
       endLevel: currentSkill,
-      endPct: pctToNext,
+      endPct: Math.max(0, Math.min(100, 100 - pctToGo)),
       costTC: 0,
       costGP: 0,
       hours: 0,
@@ -154,7 +160,7 @@ export function computeSingleWeaponResult(
       : 0;
   const totalPointsGained = weapons * effPoints;
 
-  const startPoints = startPointsFor(vocationConstant, currentSkill, pctToNext);
+  const startPoints = startPointsFor(vocationConstant, currentSkill, pctToGo);
   const endPoints = startPoints + totalPointsGained;
 
   const { level: endLevel, pct: endPct } = findSkillAndPctFromPoints(
@@ -200,7 +206,7 @@ export function computeSmartMix(
   pointsRequired: number,
   vocationConstant: number,
   currentSkill: number,
-  pctToNext: number,
+  pctToGo: number,
   mods: Modifiers,
   tcMarketPriceGp: number,
 ): SmartMixResult {
@@ -215,13 +221,14 @@ export function computeSmartMix(
     pointsRequired > MAX_REASONABLE_POINTS ||
     pointsRequired <= 0
   ) {
+    // endPct in the result is "% trained" — caller's formatter inverts it.
     return {
       regular: 0,
       durable: 0,
       lasting: 0,
       totalPointsGained: 0,
       endLevel: currentSkill,
-      endPct: pctToNext,
+      endPct: Math.max(0, Math.min(100, 100 - pctToGo)),
       costTC: 0,
       costGP: 0,
       hours: 0,
@@ -284,7 +291,7 @@ export function computeSmartMix(
   }
 
   const totalPointsGained = bestTotal;
-  const startPoints = startPointsFor(vocationConstant, currentSkill, pctToNext);
+  const startPoints = startPointsFor(vocationConstant, currentSkill, pctToGo);
   const endPoints = startPoints + totalPointsGained;
 
   const { level: endLevel, pct: endPct } = findSkillAndPctFromPoints(
@@ -328,11 +335,11 @@ export function computeSmartMix(
 export function computeSkillLossAfterDeath(
   vocationConstant: number,
   currentSkill: number,
-  pctToNext: number,
+  pctToGo: number,
   effectivePctLoss: number,
 ): { level: number; pct: number } {
   const safePct = Math.max(0, Math.min(1, effectivePctLoss));
-  const startPoints = startPointsFor(vocationConstant, currentSkill, pctToNext);
+  const startPoints = startPointsFor(vocationConstant, currentSkill, pctToGo);
   const triesLost = startPoints * safePct;
   const remaining = Math.max(0, startPoints - triesLost);
   return findSkillAndPctFromPoints(vocationConstant, remaining);

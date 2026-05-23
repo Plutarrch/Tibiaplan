@@ -41,7 +41,8 @@ const TC_THRESHOLD_GP = 14000;
 interface PersistedTraining {
   skill: string;
   currentSkill: number | null;
-  pctToNext: number | null;
+  /** In-game "% to go" (remaining %) — see trainingCalc.ts docstring. */
+  pctToGo: number | null;
   targetSkill: number | null;
   doubleEvent: boolean;
   privateDummy: boolean;
@@ -54,7 +55,7 @@ function defaults(): PersistedTraining {
   return {
     skill: "",
     currentSkill: null,
-    pctToNext: null,
+    pctToGo: null,
     targetSkill: null,
     doubleEvent: false,
     privateDummy: false,
@@ -67,7 +68,7 @@ function defaults(): PersistedTraining {
 interface CharacterSnapshot {
   vocation?: string;
   skills?: Record<string, number | null>;
-  pctToNextBySkill?: Record<string, number | null>;
+  pctToGoBySkill?: Record<string, number | null>;
 }
 
 function readCharacter(): CharacterSnapshot {
@@ -99,16 +100,16 @@ function writeCharacterSkill(skill: string, value: number | null) {
   }
 }
 
-/** Write back the per-skill "% to next" value to the character store. */
+/** Write back the per-skill "% to go" value to the character store. */
 function writeCharacterSkillPct(skill: string, value: number | null) {
   if (!skill) return;
   try {
     const raw = localStorage.getItem(CHARACTER_KEY);
     const ch = raw && raw.trim() ? JSON.parse(raw) : {};
     if (typeof ch !== "object" || ch === null) return;
-    ch.pctToNextBySkill = ch.pctToNextBySkill ?? {};
-    if (ch.pctToNextBySkill[skill] === value) return; // no-op
-    ch.pctToNextBySkill[skill] = value;
+    ch.pctToGoBySkill = ch.pctToGoBySkill ?? {};
+    if (ch.pctToGoBySkill[skill] === value) return; // no-op
+    ch.pctToGoBySkill[skill] = value;
     localStorage.setItem(CHARACTER_KEY, JSON.stringify(ch));
     window.dispatchEvent(new CustomEvent(CHARACTER_EVENT, { detail: ch }));
   } catch {
@@ -135,9 +136,9 @@ export function trainingTab() {
       if (this.skill && ch.skills?.[this.skill] != null) {
         this.currentSkill = ch.skills[this.skill] as number;
       }
-      // Same for "% to next" — Death sim and Training share this per skill.
-      if (this.skill && ch.pctToNextBySkill?.[this.skill] != null) {
-        this.pctToNext = ch.pctToNextBySkill[this.skill] as number;
+      // Same for "% to go" — Death sim and Training share this per skill.
+      if (this.skill && ch.pctToGoBySkill?.[this.skill] != null) {
+        this.pctToGo = ch.pctToGoBySkill[this.skill] as number;
       }
 
       // Consistency repair: if "Skill to train" is empty (e.g. left over from
@@ -179,7 +180,7 @@ export function trainingTab() {
 
     /**
      * Handle a `character:updated` event from the singleton bus. Mirrors
-     * vocation / skill / "% to next" changes from the Character Sheet
+     * vocation / skill / "% to go" changes from the Character Sheet
      * (or Character Search "Use as profile") without dispatching anything
      * back — the equality guards short-circuit no-op writes so the same
      * value doesn't ping-pong.
@@ -193,7 +194,7 @@ export function trainingTab() {
         if (this.skill && !this.availableSkills.find((s) => s.skill === this.skill)) {
           this.skill = "";
           this.currentSkill = null;
-          this.pctToNext = null;
+          this.pctToGo = null;
           this.showResults = false;
           this.save();
         }
@@ -207,10 +208,10 @@ export function trainingTab() {
         }
       }
 
-      if (this.skill && detail.pctToNextBySkill) {
-        const incomingPct = detail.pctToNextBySkill[this.skill];
-        if (incomingPct != null && incomingPct !== this.pctToNext) {
-          this.pctToNext = incomingPct as number;
+      if (this.skill && detail.pctToGoBySkill) {
+        const incomingPct = detail.pctToGoBySkill[this.skill];
+        if (incomingPct != null && incomingPct !== this.pctToGo) {
+          this.pctToGo = incomingPct as number;
           this.save();
         }
       }
@@ -233,7 +234,7 @@ export function trainingTab() {
       const snapshot: PersistedTraining = {
         skill: this.skill,
         currentSkill: this.currentSkill,
-        pctToNext: this.pctToNext,
+        pctToGo: this.pctToGo,
         targetSkill: this.targetSkill,
         doubleEvent: this.doubleEvent,
         privateDummy: this.privateDummy,
@@ -278,16 +279,16 @@ export function trainingTab() {
       if (!this.skill) errs.skill = "Pick a skill";
       const cur = this.currentSkill;
       const tgt = this.targetSkill;
-      const pct = this.pctToNext;
+      const pct = this.pctToGo;
       if (cur == null || !Number.isFinite(cur) || cur < 0) {
         errs.currentSkill = "Enter your current skill";
       } else if (cur > SKILL_CAP) {
         errs.currentSkill = `Max ${SKILL_CAP}`;
       }
       if (pct == null || !Number.isFinite(pct)) {
-        errs.pctToNext = "Enter % to next (0–100)";
+        errs.pctToGo = "Enter % to go (0–100)";
       } else if (pct < 0 || pct > 100) {
-        errs.pctToNext = "Must be 0 – 100";
+        errs.pctToGo = "Must be 0 – 100";
       }
       if (tgt == null || !Number.isFinite(tgt) || tgt <= 0) {
         errs.targetSkill = "Enter target skill";
@@ -316,7 +317,7 @@ export function trainingTab() {
       return pointsNeeded({
         vocationConstant: this.vocationConstant,
         currentSkill: this.currentSkill as number,
-        pctToNext: this.pctToNext as number,
+        pctToGo: this.pctToGo as number,
         targetSkill: this.targetSkill as number,
       });
     },
@@ -327,7 +328,7 @@ export function trainingTab() {
         this.pointsRequired,
         this.vocationConstant,
         this.currentSkill as number,
-        this.pctToNext as number,
+        this.pctToGo as number,
         weaponType,
         this.modifiers,
         TC_THRESHOLD_GP,
@@ -348,7 +349,7 @@ export function trainingTab() {
         this.pointsRequired,
         this.vocationConstant,
         this.currentSkill as number,
-        this.pctToNext as number,
+        this.pctToGo as number,
         this.modifiers,
         TC_THRESHOLD_GP,
       );
@@ -356,26 +357,26 @@ export function trainingTab() {
 
     // ---- Mutations ----
 
-    /** Force Current Skill / % to next / showResults blank — used whenever
+    /** Force Current Skill / % to go / showResults blank — used whenever
      *  the "Skill to train" dropdown is cleared to "Select skill". */
     clearSkillDependents() {
       let touched = false;
       if (this.currentSkill !== null) { this.currentSkill = null; touched = true; }
-      if (this.pctToNext !== null)    { this.pctToNext = null;    touched = true; }
+      if (this.pctToGo !== null)      { this.pctToGo = null;      touched = true; }
       if (this.showResults)           { this.showResults = false; touched = true; }
       if (touched) this.save();
     },
 
     onSkillChange() {
-      // Re-sync currentSkill AND "% to next" from character on skill change.
+      // Re-sync currentSkill AND "% to go" from character on skill change.
       const ch = readCharacter();
       const charSkill = ch.skills?.[this.skill];
       this.currentSkill =
         charSkill != null && Number.isFinite(charSkill)
           ? (charSkill as number)
           : null;
-      const charPct = ch.pctToNextBySkill?.[this.skill];
-      this.pctToNext =
+      const charPct = ch.pctToGoBySkill?.[this.skill];
+      this.pctToGo =
         charPct != null && Number.isFinite(charPct)
           ? (charPct as number)
           : null;
@@ -392,13 +393,13 @@ export function trainingTab() {
 
     onPctChange() {
       // Clamp to [0, 100] and round to 2 decimals — matches the in-game
-      // skill display ("Sword 80 (42.50%)") and the Death sim input.
-      const v = Number(this.pctToNext);
+      // "You have ##.##% to go" display and the Death sim input.
+      const v = Number(this.pctToGo);
       let final: number | null;
       if (Number.isFinite(v)) {
         const clamped = Math.max(0, Math.min(100, v));
         final = Math.round(clamped * 100) / 100;
-        this.pctToNext = final;
+        this.pctToGo = final;
       } else {
         final = null;
       }

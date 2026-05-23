@@ -58,11 +58,12 @@ interface PersistedCharacter {
    */
   adventurersLost: boolean;
   /**
-   * "% remaining to next skill level" per skill (same convention as the
-   * Training calculator). Persisted so the user doesn't have to retype it
-   * across simulations. Only used by the post-death skill-loss expansion.
+   * In-game "% to go" toward the next skill level, per skill (same
+   * convention as the Training calculator — see trainingCalc.ts docstring).
+   * Persisted so the user doesn't have to retype it across simulations.
+   * Only used by the post-death skill-loss expansion.
    */
-  pctToNextBySkill: Record<string, number | null>;
+  pctToGoBySkill: Record<string, number | null>;
   /**
    * Current stamina as a raw "HH:MM" string typed by the user. Capped at
    * 42:00 (the in-game maximum). The mini-calc below the blessings reads
@@ -82,7 +83,7 @@ function defaults(): PersistedCharacter {
     blessings: [true, true, true, true, true, true, true, true],
     showAllSkills: false,
     adventurersLost: false,
-    pctToNextBySkill: {},
+    pctToGoBySkill: {},
     staminaInput: "",
   };
 }
@@ -144,16 +145,16 @@ export function characterSheet() {
         if (changed) this.skills = next;
       }
 
-      if (d.pctToNextBySkill && typeof d.pctToNextBySkill === "object") {
+      if (d.pctToGoBySkill && typeof d.pctToGoBySkill === "object") {
         let changed = false;
-        const next = { ...this.pctToNextBySkill };
-        for (const [k, v] of Object.entries(d.pctToNextBySkill as Record<string, unknown>)) {
+        const next = { ...this.pctToGoBySkill };
+        for (const [k, v] of Object.entries(d.pctToGoBySkill as Record<string, unknown>)) {
           if (next[k] !== v) {
             next[k] = v as number | null;
             changed = true;
           }
         }
-        if (changed) this.pctToNextBySkill = next;
+        if (changed) this.pctToGoBySkill = next;
       }
     },
 
@@ -167,6 +168,16 @@ export function characterSheet() {
           Object.assign(this, defaults(), data);
           // Old saves stored a 7-slot array; migrate to 8-slot layout.
           this.blessings = migrateBlessings(this.blessings);
+          // Silent reset: 2026-05-23 we renamed pctToNextBySkill →
+          // pctToGoBySkill because the in-game wording is "% to go". The
+          // numbers stored under the old key are now meaningless (would
+          // be silently treated as their complement under the new
+          // formula). Drop them so the user simply re-enters from the
+          // in-game display next time they open the skill-loss expander.
+          const obsolete = (this as unknown as Record<string, unknown>).pctToNextBySkill;
+          if (obsolete !== undefined) {
+            delete (this as unknown as Record<string, unknown>).pctToNextBySkill;
+          }
         }
       } catch {
         // Ignore corrupted storage; fall through to defaults.
@@ -184,7 +195,7 @@ export function characterSheet() {
         blessings: [...this.blessings],
         showAllSkills: this.showAllSkills,
         adventurersLost: this.adventurersLost,
-        pctToNextBySkill: { ...this.pctToNextBySkill },
+        pctToGoBySkill: { ...this.pctToGoBySkill },
         staminaInput: this.staminaInput,
       };
       try {
@@ -351,7 +362,7 @@ export function characterSheet() {
     /**
      * Roll back the simulated death: restore exp, level, blessings, and the
      * Adventurer's Blessing flag to what they were before. Skill levels and
-     * the per-skill "% to next" values are preserved on purpose so the user
+     * the per-skill "% to go" values are preserved on purpose so the user
      * doesn't have to retype them between simulations.
      */
     revive() {
@@ -396,11 +407,11 @@ export function characterSheet() {
       return list ?? [];
     },
 
-    /** True if every vocation skill has a non-empty "% to next" filled in. */
+    /** True if every vocation skill has a non-empty "% to go" filled in. */
     get skillLossInputsReady(): boolean {
       if (this.vocationSkills.length === 0) return false;
       for (const s of this.vocationSkills) {
-        const v = this.pctToNextBySkill[s];
+        const v = this.pctToGoBySkill[s];
         if (v == null || !Number.isFinite(v) || v < 0 || v > 100) return false;
       }
       return true;
@@ -414,7 +425,7 @@ export function characterSheet() {
     },
 
     setSkillPct(skill: string, raw: string) {
-      const next = { ...this.pctToNextBySkill };
+      const next = { ...this.pctToGoBySkill };
       if (raw === "") {
         next[skill] = null;
       } else {
@@ -427,19 +438,19 @@ export function characterSheet() {
           next[skill] = null;
         }
       }
-      this.pctToNextBySkill = next;
+      this.pctToGoBySkill = next;
       this.save();
     },
 
     /**
-     * Compute the (skill, % remaining) the character would have AFTER the
+     * Compute the (skill, % to go) the character would have AFTER the
      * simulated death, given the current skill level and user-typed % to
-     * next. Returns null if any input is missing or no death is loaded.
+     * go. Returns null if any input is missing or no death is loaded.
      */
     skillLossFor(skill: string): { before: { level: number; pct: number }; after: { level: number; pct: number } } | null {
       if (!this.lastDeath) return null;
       const lvl = this.skills[skill];
-      const pct = this.pctToNextBySkill[skill];
+      const pct = this.pctToGoBySkill[skill];
       if (lvl == null || !Number.isFinite(lvl) || lvl < 1) return null;
       if (pct == null || !Number.isFinite(pct)) return null;
       const constants = SKILL_VOCATION_CONSTANTS[this.vocation];

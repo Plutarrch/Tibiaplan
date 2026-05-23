@@ -81,7 +81,9 @@ function totalPointsAtSkill(vocationConstant: number, skill: number): number {
   );
 }
 
-/** Inverse: given total points, return the (level, % to next) pair. */
+/** Inverse: given total points, return the (level, pct) pair. `pct` is the
+ *  % already trained inside the current span — the caller decides how to
+ *  display it (the UI shows "100 − pct" as "% remaining"). */
 function findSkillAndPctFromPoints(
   vocationConstant: number,
   totalPoints: number,
@@ -107,8 +109,12 @@ export interface OfflineInput {
   vocation: string;       // "knight" | "paladin" | "sorcerer" | "druid" | "monk"
   skill: OfflineSkill;
   currentSkill: number;
-  /** 0..100, in-game "% completed of current level". */
-  pctToNext: number;
+  /**
+   * 0..100, the in-game "You have ##.##% to go" toward the next level.
+   * pctToGo = 0 means about to ding, pctToGo = 100 means just dinged.
+   * Same convention as the Exercise Weapons calc (see trainingCalc.ts).
+   */
+  pctToGo: number;
   targetSkill: number;
   /** 0..50, premium-account loyalty bonus. */
   loyalty: number;
@@ -164,8 +170,8 @@ export function validateOfflineInput(input: OfflineInput): string | null {
   if (input.targetSkill <= input.currentSkill) {
     return "Target must be higher than current";
   }
-  if (!Number.isFinite(input.pctToNext) || input.pctToNext < 0 || input.pctToNext > 100) {
-    return "% to next must be 0 – 100";
+  if (!Number.isFinite(input.pctToGo) || input.pctToGo < 0 || input.pctToGo > 100) {
+    return "% to go must be 0 – 100";
   }
   const constants = SKILL_VOCATION_CONSTANTS[input.vocation];
   if (!constants || constants[input.skill] == null) {
@@ -187,11 +193,13 @@ export function computeOfflineTraining(
   const constants = SKILL_VOCATION_CONSTANTS[input.vocation];
   const mainConstant = constants[input.skill];
 
-  // Tries needed to advance the MAIN skill from (current, pct) to target.
+  // Tries needed to advance the MAIN skill from (current, pctToGo) to target.
+  // pctToGo is the in-game "you have X% to go" — see trainingCalc.ts docstring
+  // for why the convention had to be inverted (silent ~50% over-count bug).
   const totalAtCurrent = totalPointsAtSkill(mainConstant, input.currentSkill);
   const totalAtNext = totalPointsAtSkill(mainConstant, input.currentSkill + 1);
-  const pctCompleted = Math.max(0, Math.min(100, input.pctToNext));
-  const trained = (totalAtNext - totalAtCurrent) * (pctCompleted / 100);
+  const pctRemaining = Math.max(0, Math.min(100, input.pctToGo));
+  const trained = (totalAtNext - totalAtCurrent) * (1 - pctRemaining / 100);
   const startPoints = totalAtCurrent + trained;
   const targetPoints = totalPointsAtSkill(mainConstant, input.targetSkill);
   const triesNeeded = Math.max(0, targetPoints - startPoints);
@@ -234,8 +242,12 @@ export interface ShieldingAdvanceInput {
   mainSkill: OfflineSkill;
   /** Current Shielding level (in-game). */
   currentShielding: number;
-  /** 0..100, in-game "% completed" of the current shielding level. */
-  pctToNext: number;
+  /**
+   * 0..100, the in-game "You have ##.##% to go" toward the next shielding
+   * level (same convention as the main calc's pctToGo — copied verbatim
+   * from the in-game skill display).
+   */
+  pctToGo: number;
   /** Reuse the loyalty from the parent form — same multiplier. */
   loyalty: number;
   /** Total offline training minutes already computed by the main calc. */
@@ -266,11 +278,11 @@ export function validateShieldingAdvance(
     return `Current shielding max ${SKILL_CAP}`;
   }
   if (
-    !Number.isFinite(input.pctToNext) ||
-    input.pctToNext < 0 ||
-    input.pctToNext > 100
+    !Number.isFinite(input.pctToGo) ||
+    input.pctToGo < 0 ||
+    input.pctToGo > 100
   ) {
-    return "% to next must be 0 – 100";
+    return "% to go must be 0 – 100";
   }
   const constants = SKILL_VOCATION_CONSTANTS[input.vocation];
   if (!constants || constants["Shielding"] == null) {
@@ -303,9 +315,9 @@ export function computeShieldingAdvance(
     shieldingConstant,
     input.currentShielding + 1,
   );
-  const pctCompleted = Math.max(0, Math.min(100, input.pctToNext));
+  const pctRemaining = Math.max(0, Math.min(100, input.pctToGo));
   const startPoints =
-    totalAtCurrent + (totalAtNext - totalAtCurrent) * (pctCompleted / 100);
+    totalAtCurrent + (totalAtNext - totalAtCurrent) * (1 - pctRemaining / 100);
 
   const finalPoints = startPoints + triesGained;
   const { level, pct } = findSkillAndPctFromPoints(
