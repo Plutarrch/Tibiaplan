@@ -47,6 +47,7 @@ export function lootTab() {
     parseError: "" as string,
     copied: false as boolean,
     copiedLog: false as boolean,
+    copiedTransferIndex: -1 as number,
     copiedIndex: -1 as number,
     copiedLogIndex: -1 as number,
     /** Raw log of the hunt currently displayed (kept after we clear the textarea). */
@@ -286,6 +287,28 @@ export function lootTab() {
         this.copiedLog = true;
         setTimeout(() => {
           this.copiedLog = false;
+        }, 2000);
+      });
+    },
+
+    /**
+     * Copy one transfer's NPC banker command by its position in the
+     * `transfers` list. Format is verbatim what the in-game banker
+     * accepts: `transfer <amount> to <player>` — raw integer amount,
+     * no thousands separators, no "gp" suffix.
+     *
+     * Per-transfer rather than bulk because the banker NPC only handles
+     * one `transfer` command at a time; a multi-line paste would just
+     * confuse it.
+     */
+    copyTransferCommand(index: number) {
+      const t = this.transfers[index];
+      if (!t) return;
+      const text = `transfer ${t.amount} to ${t.to}`;
+      this._writeToClipboard(text, () => {
+        this.copiedTransferIndex = index;
+        setTimeout(() => {
+          if (this.copiedTransferIndex === index) this.copiedTransferIndex = -1;
         }, 2000);
       });
     },

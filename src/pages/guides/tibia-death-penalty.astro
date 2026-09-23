@@ -2,6 +2,7 @@
 import Layout from "../../layouts/Layout.astro";
 import Header from "../../components/Header.astro";
 import Footer from "../../components/Footer.astro";
+import DeathSimulator from "../../components/DeathSimulator.astro";
 
 const PUBLISHED = "2026-05-15";
 const MODIFIED = "2026-05-15";
@@ -66,11 +67,18 @@ const structuredData = {
             your level, whether you're promoted, how many blessings you bought,
             whether you have Twist of Fate, who killed you (PvE or PvP), and
             what skull state your character had earned. This guide walks through
-            the exact formulas and shows you what each variable saves you —
-            with the
-            <a href="/" class="text-accent-violet hover:underline">Death Simulator</a>
-            on the home page ready to plug your numbers in.
+            the exact formulas and shows you what each variable saves you, and
+            ends with an interactive Death Simulator so you can plug your own
+            numbers in.
           </p>
+
+          <a
+            href="#simulator"
+            class="mt-5 inline-flex items-center gap-2 rounded px-5 py-2 text-[12px] font-medium text-bg-primary transition-opacity hover:opacity-90"
+            style="background: linear-gradient(135deg, #9B8AFB 0%, #5DCAE8 100%);"
+          >
+            Go to simulator ↓
+          </a>
         </header>
 
         <!-- Mobile-only TOC (sidebar carries the desktop version) -->
@@ -912,24 +920,32 @@ const structuredData = {
             </ul>
           </nav>
 
-          <div class="rounded-md border border-accent-violet/40 bg-accent-violet/5 p-4 text-center">
-            <p class="text-[10px] uppercase tracking-wider text-accent-violet">
-              Death Simulator
-            </p>
-            <p class="mx-auto mt-2 text-[12px] leading-relaxed text-text-secondary">
-              Plug your numbers into the live calculator.
-            </p>
-            <a
-              href="/"
-              class="mt-3 inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-[11px] font-medium text-bg-primary transition-opacity hover:opacity-90"
-              style="background: linear-gradient(135deg, #9B8AFB 0%, #5DCAE8 100%);"
-            >
-              Open it →
-            </a>
-          </div>
         </div>
       </aside>
     </div>
+
+    <!-- Interactive calculator (matches the /guides/tibia-offline-training
+         pattern). scroll-mt-24 keeps the sticky header from covering the
+         section title when the user clicks "Go to simulator" above. -->
+    <section
+      id="simulator"
+      class="mt-10 scroll-mt-24 rounded-md border-2 border-accent-violet/40 bg-bg-sunken p-6"
+    >
+      <div class="mb-5">
+        <p class="text-[10px] uppercase tracking-[0.2em] text-accent-violet">
+          Interactive
+        </p>
+        <h2 class="mt-1 text-[18px] font-medium text-text-primary">
+          Death Simulator
+        </h2>
+        <p class="mt-2 text-[12px] leading-relaxed text-text-secondary">
+          Pick your vocation, level, and blessings — the simulator runs the
+          same formulas covered in the guide above and shows the exact
+          before/after state including skill and mana loss.
+        </p>
+      </div>
+      <DeathSimulator />
+    </section>
 
     <div class="mt-8 flex justify-center gap-3">
       <a

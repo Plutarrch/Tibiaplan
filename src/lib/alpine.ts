@@ -2,6 +2,7 @@ import Alpine from "alpinejs";
 import { boostedToday } from "./boostedToday";
 import { characterSearch } from "./characterSearch";
 import { characterSheet } from "./characterSheet";
+import { deathSimulator } from "./deathSimulator";
 import { dromeTimer } from "./dromeTimer";
 import { imbuementsTab } from "./imbuementsTab";
 import { lootTab } from "./lootTab";
@@ -19,6 +20,7 @@ declare global {
 }
 
 Alpine.data("characterSheet", characterSheet);
+Alpine.data("deathSimulator", deathSimulator);
 Alpine.data("trainingTab", trainingTab);
 Alpine.data("trainingSlots", trainingSlots);
 Alpine.data("offlineTrainingTab", offlineTrainingTab);

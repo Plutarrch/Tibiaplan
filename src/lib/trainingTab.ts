@@ -1,18 +1,17 @@
 import { TRAINING_BY_VOCATION, type TrainableSkill } from "../data/training";
 import {
   computeSingleWeaponResult,
-  computeSmartMix,
   formatCount,
   formatGold,
   formatHours,
   pointsNeeded,
   type Modifiers,
-  type SmartMixResult,
   type WeaponResult,
 } from "./trainingCalc";
 
 const STORAGE_KEY_BASE = "tibiaplanner.training";
 const RESET_EVENT = "app:reset";
+const CHARACTER_EVENT = "character:updated";
 
 /**
  * Storage key per slot. The "primary" slot keeps the pre-multi-slot
@@ -41,6 +40,15 @@ function installBus() {
   busInstalled = true;
   window.addEventListener(RESET_EVENT, () => {
     for (const inst of activeInstances.values()) inst.reset();
+  });
+  // The primary slot mirrors the vocation coming from Character Search's
+  // "Use as profile" (dispatched as `character:updated {vocation}`). Only
+  // the primary is synced — secondary slots are for cross-vocation
+  // comparisons and stay independent on purpose.
+  window.addEventListener(CHARACTER_EVENT, (e: Event) => {
+    const primary = activeInstances.get("primary");
+    if (!primary) return;
+    primary._onCharacterUpdated((e as CustomEvent).detail);
   });
 }
 
@@ -90,6 +98,12 @@ export function trainingTab(slotId: string = "primary") {
     VOCATIONS,
     LOYALTY_OPTIONS,
 
+    /** Last vocation we broadcast on `character:updated`. When our own
+     *  echo comes back through the listener we skip re-broadcasting to
+     *  avoid a ping-pong loop. Also set by the incoming listener to
+     *  mark values as "external, don't echo". */
+    _lastDispatchedVocation: null as string | null,
+
     init() {
       installBus();
       activeInstances.set(this.slotId, this);
@@ -128,6 +142,19 @@ export function trainingTab(slotId: string = "primary") {
         this.showResults = false;
         this.save();
       });
+
+      // On mount, sync the persisted vocation of the primary slot to the
+      // Character Sheet sprite. Without this the sprite starts grey even
+      // when the user's last session picked a vocation here. Set the
+      // guard so the returning echo from the listener doesn't loop.
+      if (this.slotId === "primary" && this.vocation && typeof window !== "undefined") {
+        this._lastDispatchedVocation = this.vocation;
+        window.dispatchEvent(
+          new CustomEvent(CHARACTER_EVENT, {
+            detail: { vocation: this.vocation },
+          }),
+        );
+      }
 
       // x-model + x-for ordering workaround. On a ClientRouter swap the
       // page hydrates fresh: <select x-model="skill"> evaluates against
@@ -299,18 +326,6 @@ export function trainingTab(slotId: string = "primary") {
       ];
     },
 
-    get smartMix(): SmartMixResult | null {
-      if (!this.isValid) return null;
-      return computeSmartMix(
-        this.pointsRequired,
-        this.vocationConstant,
-        this.currentSkill as number,
-        this.pctToGo as number,
-        this.modifiers,
-        TC_THRESHOLD_GP,
-      );
-    },
-
     // ---- Mutations ----
 
     /** Force Current Skill / % to go / showResults blank — used whenever
@@ -325,6 +340,43 @@ export function trainingTab(slotId: string = "primary") {
 
     onVocationChange() {
       this.save();
+      // Only the primary slot drives the home Character Sheet sprite —
+      // secondary slots are for cross-vocation comparisons and shouldn't
+      // steal the sprite. Dispatched via the shared "character:updated"
+      // event the Character Sheet already listens to. Safe no-op when
+      // characterSheet isn't mounted on the current page.
+      if (this.slotId !== "primary" || typeof window === "undefined") return;
+      // Anti-loop: if this vocation value is the same one we last saw
+      // come in through the listener (or the one we last broadcast),
+      // skip. Otherwise we'd bounce forever with the CharacterSheet's
+      // echo of the same event.
+      if (this.vocation === this._lastDispatchedVocation) return;
+      this._lastDispatchedVocation = this.vocation;
+      window.dispatchEvent(
+        new CustomEvent(CHARACTER_EVENT, {
+          detail: { vocation: this.vocation },
+        }),
+      );
+    },
+
+    /**
+     * Handle `character:updated` events coming from Character Search's
+     * "Use as profile" flow. Only the primary slot receives these (the
+     * bus filters by activeInstances.get("primary")). Marks the value
+     * as "external" so onVocationChange doesn't echo it back.
+     */
+    _onCharacterUpdated(detail: unknown) {
+      if (!detail || typeof detail !== "object") return;
+      const d = detail as { vocation?: string };
+      if (typeof d.vocation !== "string") return;
+      if (d.vocation === this.vocation) return;
+      // Set the guard BEFORE the assignment so the $watch("vocation")
+      // → onVocationChange call skips the echo dispatch.
+      this._lastDispatchedVocation = d.vocation;
+      this.vocation = d.vocation;
+      // The vocation $watch will fire and clear skill / other fields
+      // automatically — that's the same behavior as a manual dropdown
+      // change, which is what we want.
     },
 
     onSkillChange() {

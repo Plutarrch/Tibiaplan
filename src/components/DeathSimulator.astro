@@ -1,0 +1,346 @@
+---
+/**
+ * Death Simulator — standalone version that lives at the bottom of the
+ * /guides/tibia-death-penalty guide. Reads and writes its own state
+ * under `tibiaplanner.deathSimulator`; independent of the Character
+ * Sheet on the home page (same decoupling pattern as the Training and
+ * Offline Training calculators).
+ *
+ * Visual model:
+ *   - Header row: title on the left, Simulate/Revive buttons on the
+ *     right (buttons are the primary action, so they belong up top).
+ *   - Inputs grid: Vocation + Promotion, Level + Experience.
+ *   - Blessings row: Adventurer's Blessing card for lvl 1-20, or the
+ *     8-slot grid (7 regulars + Twist of Fate) for lvl 21+.
+ *   - Death summary card (post-simulation) with the Before/After table.
+ *   - Skill loss expansion (post-simulation) for per-skill loss math.
+ *
+ * The sprite that lives in the Character Sheet is NOT duplicated here
+ * (owner call — the simulator is data-focused, the CS is identity).
+ */
+import { VOCATIONS } from "../data/skills";
+---
+
+<section x-data="deathSimulator" class="space-y-6">
+  <!-- Header: title + action buttons -->
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h3 class="text-[14px] font-medium tracking-wide text-text-primary">
+      Simulate a death
+    </h3>
+    <div class="flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        @click="simulateDeath()"
+        :disabled="!level || level < 2"
+        class="rounded px-4 py-2 text-[12px] font-medium text-white shadow-sm transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+        style="background: linear-gradient(180deg, #B53A3A, #791F1F)"
+      >
+        Simulate Death
+      </button>
+      <button
+        type="button"
+        x-show="lastDeath"
+        x-cloak
+        @click="revive()"
+        class="rounded px-4 py-2 text-[12px] font-semibold shadow-sm transition-opacity hover:opacity-90"
+        style="background: linear-gradient(180deg, #6FE7B7, #3BA37D); color: #0E0E18"
+      >
+        Revive
+      </button>
+    </div>
+  </div>
+
+  <!-- Vocation + Promotion + Level + Experience -->
+  <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+    <div class="grid grid-cols-[1fr_auto] items-end gap-3">
+      <label class="block">
+        <span class="mb-1 block text-[10px] uppercase tracking-wider text-text-tertiary">Vocation</span>
+        <select
+          x-model="vocation"
+          @change="onVocationChange()"
+          class="w-full rounded border border-border-subtle bg-bg-sunken px-3 py-1.5 text-[12px] text-text-primary focus:border-accent-violet focus:outline-none"
+        >
+          <option value="">—</option>
+          {VOCATIONS.map((v) => <option value={v.value}>{v.label}</option>)}
+        </select>
+      </label>
+
+      <label class="flex items-center gap-2 pb-1.5">
+        <input
+          type="checkbox"
+          x-model="promotion"
+          @change="save()"
+          class="h-4 w-4 rounded border-border-subtle bg-bg-sunken accent-accent-violet"
+        />
+        <span class="text-[11px] text-text-secondary">Promotion</span>
+      </label>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+      <label class="block">
+        <span class="mb-1 block text-[10px] uppercase tracking-wider text-text-tertiary">Level</span>
+        <input
+          type="number"
+          min="1"
+          max="5000"
+          x-model.number="level"
+          @input.debounce.300ms="onLevelChange()"
+          placeholder="—"
+          class="w-full rounded border border-border-subtle bg-bg-sunken px-3 py-1.5 text-[12px] text-text-primary focus:border-accent-violet focus:outline-none"
+        />
+      </label>
+
+      <label class="block">
+        <span class="mb-1 block text-[10px] uppercase tracking-wider text-text-tertiary">Experience</span>
+        <input
+          type="number"
+          min="0"
+          x-model.number="experience"
+          @input.debounce.300ms="onExperienceChange()"
+          placeholder="—"
+          class="w-full rounded border border-border-subtle bg-bg-sunken px-3 py-1.5 text-[12px] text-text-primary focus:border-accent-violet focus:outline-none"
+        />
+      </label>
+    </div>
+  </div>
+
+  <!-- Blessings -->
+  <div>
+    <!-- Lvl 1-20: Adventurer's Blessing card replaces the regular grid. -->
+    <template x-if="level && level >= 1 && level <= 20">
+      <div>
+        <div class="flex items-center justify-between">
+          <h4 class="text-[12px] font-medium text-text-primary">Blessing</h4>
+          <span
+            class="text-[10px]"
+            :class="hasAdventurersBlessing ? 'text-accent-violet' : 'text-text-tertiary'"
+            x-text="hasAdventurersBlessing ? 'Active' : 'Lost'"
+          ></span>
+        </div>
+        <button
+          type="button"
+          @click="toggleAdventurersBlessing()"
+          class="mt-2 block w-full max-w-[400px] rounded-md border-2 p-3 text-left transition-colors"
+          :class="hasAdventurersBlessing ? 'border-accent-violet/60 bg-accent-violet/10' : 'border-border-subtle bg-bg-sunken opacity-60'"
+          :aria-pressed="hasAdventurersBlessing"
+        >
+          <p class="text-[12px] font-medium text-text-primary">Adventurer&apos;s Blessing</p>
+          <p class="mt-0.5 text-[10px] leading-relaxed text-text-secondary">
+            Free for new players (lvl 1&ndash;20). Fully protects you from PvP death &mdash; no exp, skills, or items lost. Lost forever once you reach level 21 or attack another player first.
+          </p>
+        </button>
+      </div>
+    </template>
+
+    <!-- Lvl 21+ (or no level set): the 7 regular blessings + Twist of Fate. -->
+    <template x-if="!level || level >= 21">
+      <div>
+        <div class="flex items-center justify-between">
+          <h4 class="text-[12px] font-medium text-text-primary">Blessings</h4>
+          <span class="text-[10px] text-text-tertiary" x-text="`${blessingsActive}/8 active`"></span>
+        </div>
+
+        <div class="mt-2 grid w-full max-w-[520px] grid-cols-8 gap-2">
+          <template x-for="i in BLESSING_DISPLAY_ORDER" :key="i">
+            <button
+              type="button"
+              class="tooltip-host group relative grid aspect-square w-full place-items-center rounded border bg-bg-sunken transition-all"
+              :title="BLESSINGS[i].name"
+              :aria-label="BLESSINGS[i].name"
+              :aria-pressed="blessings[i]"
+              :class="blessings[i] ? 'border-accent-violet/60 shadow-[0_0_0_1px_rgba(155,138,251,0.25)]' : 'border-border-subtle opacity-40 grayscale'"
+              @click="toggleBlessing(i)"
+            >
+              <img
+                :src="BLESSINGS[i].sprite"
+                :alt="BLESSINGS[i].name"
+                class="h-full w-full object-contain p-1"
+                loading="lazy"
+                decoding="async"
+                onerror="this.style.display='none'"
+              />
+              <span class="tooltip-text" x-text="BLESSINGS[i].name"></span>
+            </button>
+          </template>
+        </div>
+
+        <p
+          x-show="backpackDropRisk"
+          x-cloak
+          class="mt-2 text-[10px] text-gold"
+        >
+          &#9888; Backpack and equipped items may drop on death (under 5 blessings).
+        </p>
+      </div>
+    </template>
+  </div>
+
+  <!-- Death summary (post-simulation) -->
+  <template x-if="lastDeath">
+    <article class="rounded-md border border-danger/40 bg-danger/5 p-4">
+      <div class="flex items-center justify-between gap-2">
+        <h4 class="text-[12px] font-medium text-danger">
+          <span aria-hidden="true">&#9760;</span>
+          Death summary
+          <span class="ml-1 font-normal text-text-tertiary">
+            (<span x-text="deathTypeLabel(lastDeath.type)"></span>)
+          </span>
+        </h4>
+        <button
+          type="button"
+          @click="clearLastDeath()"
+          title="Dismiss"
+          aria-label="Dismiss death summary"
+          class="rounded p-1 text-[16px] font-bold leading-none text-text-tertiary transition-colors hover:text-text-primary"
+        >
+          &times;
+        </button>
+      </div>
+
+      <table class="mt-3 w-full text-[11px]">
+        <thead class="text-[10px] uppercase tracking-wider text-text-tertiary">
+          <tr class="border-b border-border-subtle">
+            <th class="py-1.5 text-left font-medium"></th>
+            <th class="py-1.5 pr-3 text-right font-medium">Before</th>
+            <th class="py-1.5 text-center font-medium"></th>
+            <th class="py-1.5 text-right font-medium">After</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="border-b border-border-subtle/40">
+            <td class="py-1.5 pr-3 text-text-tertiary">Level</td>
+            <td class="py-1.5 pr-3 text-right text-text-secondary" x-text="lastDeath.levelBefore"></td>
+            <td class="py-1.5 text-center text-text-tertiary">&rarr;</td>
+            <td class="py-1.5 text-right font-semibold text-text-primary" x-text="lastDeath.levelAfter"></td>
+          </tr>
+          <tr class="border-b border-border-subtle/40">
+            <td class="py-1.5 pr-3 text-text-tertiary">Total exp</td>
+            <td class="py-1.5 pr-3 text-right text-text-secondary" x-text="formatExp(lastDeath.expBefore)"></td>
+            <td class="py-1.5 text-center text-text-tertiary">&rarr;</td>
+            <td class="py-1.5 text-right font-semibold text-text-primary" x-text="formatExp(lastDeath.expAfter)"></td>
+          </tr>
+          <tr class="border-b border-border-subtle/40">
+            <td class="py-1.5 pr-3 text-text-tertiary">Regular bless</td>
+            <td class="py-1.5 pr-3 text-right text-text-secondary" x-text="`${lastDeath.regularBlessingsBefore}/7`"></td>
+            <td class="py-1.5 text-center text-text-tertiary">&rarr;</td>
+            <td
+              class="py-1.5 text-right font-semibold"
+              :class="lastDeath.regularBlessingsAfter < lastDeath.regularBlessingsBefore ? 'text-danger' : 'text-text-primary'"
+              x-text="`${lastDeath.regularBlessingsAfter}/7`"
+            ></td>
+          </tr>
+          <tr>
+            <td class="py-1.5 pr-3 text-text-tertiary">Twist of Fate</td>
+            <td class="py-1.5 pr-3 text-right text-text-secondary" x-text="lastDeath.hadTwistOfFateBefore ? 'Active' : '—'"></td>
+            <td class="py-1.5 text-center text-text-tertiary">&rarr;</td>
+            <td
+              class="py-1.5 text-right font-semibold"
+              :class="lastDeath.hadTwistOfFateBefore && !lastDeath.hasTwistOfFateAfter ? 'text-danger' : (lastDeath.hasTwistOfFateAfter ? 'text-text-primary' : 'text-text-tertiary')"
+              x-text="lastDeath.hasTwistOfFateAfter ? 'Active' : '—'"
+            ></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p class="mt-3 text-[10px] leading-relaxed text-text-secondary">
+        <span class="font-semibold text-danger" x-text="`Lost ${formatExp(lastDeath.expBefore - lastDeath.expAfter)} exp`"></span>
+        <template x-if="lastDeath.result.containerDropChance > 0 || lastDeath.result.equipmentDropChance > 0">
+          <span>
+            &middot; backpack drop chance:
+            <span class="text-gold" x-text="`${(lastDeath.result.containerDropChance * 100).toFixed(0)}%`"></span>
+            &middot; per-equipped-item:
+            <span class="text-gold" x-text="`${(lastDeath.result.equipmentDropChance * 100).toFixed(1)}%`"></span>
+          </span>
+        </template>
+      </p>
+
+      <!-- Skill exp loss expansion. Disabled if vocation is unset. -->
+      <button
+        type="button"
+        @click="toggleSkillLoss()"
+        :disabled="vocationSkills.length === 0"
+        :title="vocationSkills.length === 0 ? 'Pick a vocation to use this' : 'See how much skill / mana you lost'"
+        class="mt-3 w-full rounded border border-dashed py-2 text-[11px] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+        :class="skillLossOpen ? 'border-accent-violet bg-accent-violet/10 text-accent-violet' : 'border-border-subtle bg-bg-sunken text-text-secondary hover:border-accent-violet hover:text-accent-violet'"
+      >
+        <span x-show="!skillLossOpen">Want to know skill exp loss?</span>
+        <span x-show="skillLossOpen" x-cloak>Hide skill exp loss</span>
+      </button>
+
+      <div x-show="skillLossOpen && vocationSkills.length > 0" x-cloak class="mt-3 rounded-md border border-border-subtle bg-bg-sunken p-3">
+        <p class="text-[10px] leading-relaxed text-text-secondary">
+          Fill in each skill&apos;s current level and the &quot;% to go&quot; your client shows next to it (e.g. from &quot;You have 42.50% to go&quot; enter 42.50). Same formula as the exp loss in the table above.
+        </p>
+
+        <div class="mt-3 space-y-2">
+          <div class="grid grid-cols-[minmax(0,1fr)_64px_72px] items-center gap-2 text-[10px] uppercase tracking-wider text-text-tertiary">
+            <span></span>
+            <span>Skill</span>
+            <span>% to go</span>
+          </div>
+
+          <template x-for="s in vocationSkills" :key="s">
+            <div class="grid grid-cols-[minmax(0,1fr)_64px_72px] items-center gap-2 text-[11px]">
+              <span class="truncate text-text-secondary" x-text="s"></span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                :value="skills[s] ?? ''"
+                @input.debounce.200ms="setSkill(s, $event.target.value)"
+                placeholder="lvl"
+                class="rounded border border-border-subtle bg-bg-primary px-2 py-1 text-text-primary focus:border-accent-violet focus:outline-none"
+              />
+              <input
+                type="text"
+                inputmode="decimal"
+                :value="pctToGoBySkill[s] ?? ''"
+                @blur="setSkillPct(s, $event.target.value)"
+                @keydown.enter="$event.target.blur()"
+                placeholder="%"
+                class="rounded border border-border-subtle bg-bg-primary px-2 py-1 text-text-primary focus:border-accent-violet focus:outline-none"
+              />
+            </div>
+          </template>
+        </div>
+
+        <div x-show="skillLossInputsReady" x-cloak class="mt-4 border-t border-border-subtle pt-3">
+          <p class="text-[10px] uppercase tracking-wider text-text-tertiary">After this death</p>
+          <table class="mt-2 w-full text-[11px]">
+            <tbody>
+              <template x-for="s in vocationSkills" :key="s">
+                <tr class="border-b border-border-subtle/40 last:border-0">
+                  <td class="py-1.5 pr-3 text-text-secondary" x-text="s"></td>
+                  <td class="py-1.5 pr-3 text-right text-text-tertiary">
+                    <span x-text="skills[s]"></span>
+                    <span class="text-text-tertiary">(<span x-text="fmtPct(pctToGoBySkill[s] ?? 0)"></span>%)</span>
+                  </td>
+                  <td class="py-1.5 text-center text-text-tertiary">&rarr;</td>
+                  <td class="py-1.5 text-right">
+                    <template x-if="skillLossFor(s)">
+                      <span>
+                        <span
+                          class="font-semibold"
+                          :class="skillLossFor(s).after.level < skillLossFor(s).before.level ? 'text-danger' : 'text-text-primary'"
+                          x-text="skillLossFor(s).after.level"
+                        ></span>
+                        <span class="text-text-tertiary">(<span x-text="fmtPct(skillLossFor(s).after.pct)"></span>%)</span>
+                      </span>
+                    </template>
+                    <template x-if="!skillLossFor(s)">
+                      <span class="text-text-tertiary">&mdash;</span>
+                    </template>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+
+        <p x-show="!skillLossInputsReady" class="mt-3 text-[10px] text-text-tertiary">
+          Fill in every skill above to see the result.
+        </p>
+      </div>
+    </article>
+  </template>
+</section>

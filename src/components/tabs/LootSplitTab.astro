@@ -24,19 +24,16 @@
       under-price items they pick up themselves. Quick callout so parties
       know to discuss pricing BEFORE the hunt.
     -->
-    <div class="rounded-md border border-gold/30 bg-gold/5 px-4 py-3">
-      <p class="flex items-start gap-2 text-[11px] leading-relaxed text-gold">
-        <span aria-hidden="true" class="font-bold">⚠</span>
+    <div class="rounded-md border border-gold/30 bg-gold/5 px-3 py-1.5">
+      <p class="flex items-center gap-1.5 text-[10px] leading-normal text-gold">
+        <span aria-hidden="true">⚠</span>
         <span>
-          <span class="font-semibold">Prices come from your in-game Loot Type setting</span>
-          (Market / NPC / Leader). Market prices can be manipulated, NPC
-          mode under-values rares, and "Leader" mode lets one player set
-          custom prices that everyone trusts. There is no 100% objective
-          split — confirm with the party leader which mode they're using
-          and what the rares are worth
-          <span class="font-semibold">before the hunt</span>.
-          <a href="/guides/tibia-loot-split#prices" class="underline hover:text-text-primary">
-            Read the full breakdown →
+          Confirm loot prices with your party leader.
+          <a
+            href="/guides/tibia-loot-split#prices"
+            class="underline hover:text-text-primary"
+          >
+            Read the guide
           </a>
         </span>
       </p>
@@ -145,11 +142,27 @@
 
         <ul x-show="transfers.length > 0" x-cloak class="mt-3 space-y-2 text-[12px]">
           <template x-for="(t, i) in transfers" :key="i">
-            <li class="flex items-baseline gap-3 border-t border-border-subtle pt-2 first:border-0 first:pt-0">
+            <li class="flex flex-wrap items-baseline gap-3 border-t border-border-subtle pt-2 first:border-0 first:pt-0">
               <span class="font-semibold text-text-primary" x-text="t.from"></span>
               <span class="font-bold text-text-secondary" aria-hidden="true">→</span>
               <span class="font-semibold text-text-primary" x-text="t.to"></span>
               <span class="ml-auto whitespace-nowrap font-semibold text-gold" x-text="`${formatNumber(t.amount)} gp`"></span>
+              <!-- Per-line copy: the banker NPC only processes one
+                   `transfer <amount> to <player>` command at a time,
+                   so bulk-copying all lines together was useless. Each
+                   row gets its own button that copies just that single
+                   command in the exact string the NPC expects (raw
+                   amount, no commas, no "gp"). -->
+              <button
+                type="button"
+                @click="copyTransferCommand(i)"
+                :title="`Copy: transfer ${t.amount} to ${t.to}`"
+                class="rounded border border-border-subtle bg-bg-sunken px-2 py-1 text-[10px] font-medium text-text-secondary transition-colors hover:border-accent-violet hover:text-accent-violet"
+                :class="copiedTransferIndex === i ? 'border-success text-success hover:border-success hover:text-success' : ''"
+              >
+                <span x-show="copiedTransferIndex !== i">Copy</span>
+                <span x-show="copiedTransferIndex === i" x-cloak>✓ Copied</span>
+              </button>
             </li>
           </template>
         </ul>
