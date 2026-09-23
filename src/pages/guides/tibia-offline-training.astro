@@ -2,6 +2,7 @@
 import Layout from "../../layouts/Layout.astro";
 import Header from "../../components/Header.astro";
 import Footer from "../../components/Footer.astro";
+import OfflineTrainingTab from "../../components/tabs/OfflineTrainingTab.astro";
 
 const PUBLISHED = "2026-05-16";
 const MODIFIED = "2026-05-16";
@@ -57,13 +58,22 @@ const structuredData = {
             Offline training is the quiet workhorse of every Tibia
             character. You log out at a training statue, the game trains
             for you while you're not playing, and your skills creep up
-            without spending a single gold coin. The
-            <a href="/" class="text-accent-violet hover:underline">Offline Training calculator</a>
-            on the home page tells you exactly how long it'll take. This
-            guide explains the mechanics behind that number — pool, delay,
-            statue choice, and the parallel shielding gain that makes
-            offline uniquely valuable.
+            without spending a single gold coin. This guide explains the
+            mechanics — pool, delay, statue choice, and the parallel
+            shielding gain that makes offline uniquely valuable — and
+            ends with an interactive calculator so you can plug in your
+            own numbers.
           </p>
+
+          <!-- Jump link to the calculator at the bottom of the guide.
+               Same violet gradient the site uses for primary CTAs. -->
+          <a
+            href="#calculator"
+            class="mt-5 inline-flex items-center gap-2 rounded px-5 py-2 text-[12px] font-medium text-bg-primary transition-opacity hover:opacity-90"
+            style="background: linear-gradient(135deg, #9B8AFB 0%, #5DCAE8 100%);"
+          >
+            Go to calculator ↓
+          </a>
         </header>
 
         <!-- Mobile-only TOC -->
@@ -473,24 +483,26 @@ const structuredData = {
           </ul>
         </section>
 
-        <!-- === CTA === -->
-        <div class="mt-10 rounded-md border border-accent-violet/40 bg-accent-violet/5 p-5 text-center">
-          <p class="text-[11px] uppercase tracking-wider text-accent-violet">
-            Plug in your numbers
-          </p>
-          <p class="mx-auto mt-2 max-w-md text-[13px] leading-relaxed text-text-secondary">
-            The Offline Training calculator on the home page takes your
-            vocation, current skill, % to go, and target — returns
-            exact offline-time-to-target and parallel shielding gain.
-          </p>
-          <a
-            href="/#training"
-            class="mt-4 inline-flex items-center gap-2 rounded px-5 py-2 text-[12px] font-medium text-bg-primary transition-opacity hover:opacity-90"
-            style="background: linear-gradient(135deg, #9B8AFB 0%, #5DCAE8 100%);"
-          >
-            Open Offline Training →
-          </a>
-        </div>
+        <!-- === Interactive calculator === -->
+        <section
+          id="calculator"
+          class="mt-10 scroll-mt-24 rounded-md border-2 border-accent-violet/40 bg-bg-sunken p-6"
+        >
+          <div class="mb-5">
+            <p class="text-[10px] uppercase tracking-[0.2em] text-accent-violet">
+              Interactive
+            </p>
+            <h2 class="mt-1 text-[18px] font-medium text-text-primary">
+              Offline Training Calculator
+            </h2>
+            <p class="mt-2 text-[12px] leading-relaxed text-text-secondary">
+              Pick your vocation, skill, current level, and target — the
+              calc returns exact offline-time-to-target based on the
+              12-hour pool and vocation constants explained above.
+            </p>
+          </div>
+          <OfflineTrainingTab />
+        </section>
       </article>
 
       <!-- Sticky sidebar -->
@@ -513,21 +525,6 @@ const structuredData = {
             </ul>
           </nav>
 
-          <div class="rounded-md border border-accent-violet/40 bg-accent-violet/5 p-4 text-center">
-            <p class="text-[10px] uppercase tracking-wider text-accent-violet">
-              Offline Training calc
-            </p>
-            <p class="mx-auto mt-2 text-[12px] leading-relaxed text-text-secondary">
-              Time-to-target + shielding gain, instant.
-            </p>
-            <a
-              href="/#training"
-              class="mt-3 inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-[11px] font-medium text-bg-primary transition-opacity hover:opacity-90"
-              style="background: linear-gradient(135deg, #9B8AFB 0%, #5DCAE8 100%);"
-            >
-              Open it →
-            </a>
-          </div>
         </div>
       </aside>
     </div>

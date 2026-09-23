@@ -1,10 +1,12 @@
 /**
- * Alpine module for the Offline Training sub-tab.
+ * Alpine module for the Offline Training calculator.
  *
- * Mirrors the structure of trainingTab.ts (Exercise Weapons) for
- * consistency: singleton activeInstance pattern + same reactive
- * conventions. Phase 2 wires `computeOfflineTraining` to the form;
- * Phase 3 cross-verifies the constants against TibiaPal.
+ * Standalone calculator — no dependency on the Character Sheet. The user
+ * picks vocation and skill in the calc itself. Skills are filtered by
+ * vocation using TRAINING_BY_VOCATION, since offline statues follow the
+ * same "which skill can this vocation actually train" rules as exercise
+ * weapons (with Magic Level and the main melee/distance/fist for the
+ * matching vocation).
  */
 
 import {
@@ -18,24 +20,19 @@ import {
   type ShieldingAdvanceInput,
   type ShieldingAdvanceResult,
 } from "./offlineTrainingCalc";
+import { TRAINING_BY_VOCATION, type TrainableSkill } from "../data/training";
 
 const STORAGE_KEY = "tibiaplanner.offlineTraining";
-const CHARACTER_KEY = "tibiaplanner.character";
 const RESET_EVENT = "app:reset";
-const CHARACTER_EVENT = "character:updated";
 
-export const OFFLINE_SKILLS: readonly OfflineSkill[] = [
-  "Magic level",
-  "Sword",
-  "Axe",
-  "Club",
-  "Distance",
-  "Fist",
-] as const;
+/** Same vocation list as the Exercise Weapons calc — kept in sync
+ *  intentionally (both calcs work off the same universe of vocations). */
+export const VOCATIONS = ["druid", "knight", "monk", "paladin", "sorcerer"] as const;
 
 export const LOYALTY_OPTIONS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50] as const;
 
 interface PersistedOfflineTraining {
+  vocation: string;
   skill: OfflineSkill | "";
   currentSkill: number | null;
   /** In-game "% to go" — see trainingCalc.ts docstring for the convention. */
@@ -52,6 +49,7 @@ interface PersistedOfflineTraining {
 
 function defaults(): PersistedOfflineTraining {
   return {
+    vocation: "",
     skill: "",
     currentSkill: null,
     pctToGo: null,
@@ -66,7 +64,8 @@ function defaults(): PersistedOfflineTraining {
 }
 
 // Singleton bus — same pattern as trainingTab.ts to avoid listener
-// accumulation across ClientRouter swaps.
+// accumulation across ClientRouter swaps. Only RESET now (the calc
+// is fully decoupled from the Character Sheet as of 2026-09-23).
 let activeInstance: ReturnType<typeof offlineTrainingTab> | null = null;
 let busInstalled = false;
 function installBus() {
@@ -75,35 +74,38 @@ function installBus() {
   window.addEventListener(RESET_EVENT, () => {
     activeInstance?.reset();
   });
-  window.addEventListener(CHARACTER_EVENT, (e: Event) => {
-    activeInstance?._onCharacterUpdated((e as CustomEvent).detail);
-  });
-}
-
-function readCharacterVocation(): string {
-  try {
-    const raw = localStorage.getItem(CHARACTER_KEY);
-    if (!raw) return "";
-    const data = JSON.parse(raw);
-    return typeof data?.vocation === "string" ? data.vocation : "";
-  } catch {
-    return "";
-  }
 }
 
 export function offlineTrainingTab() {
   return {
     ...defaults(),
 
-    vocation: "",
-    OFFLINE_SKILLS,
+    VOCATIONS,
     LOYALTY_OPTIONS,
 
     init() {
       installBus();
       activeInstance = this;
-      this.vocation = readCharacterVocation();
       this.load();
+
+      // Reactive guard: if the user changes vocation and the current
+      // skill is no longer valid for the new vocation, blank everything.
+      // Full reset avoids half-cleared state from a previous vocation's
+      // picks lingering visibly.
+      const alpine = this as unknown as {
+        $watch: (path: string, cb: (v: unknown) => void) => void;
+      };
+      alpine.$watch("vocation", () => {
+        this.skill = "";
+        this.currentSkill = null;
+        this.pctToGo = null;
+        this.targetSkill = null;
+        this.showResults = false;
+        this.shieldingOpen = false;
+        this.shieldingCurrent = null;
+        this.shieldingPctToGo = null;
+        this.save();
+      });
     },
 
     load() {
@@ -112,6 +114,15 @@ export function offlineTrainingTab() {
         if (!raw) return;
         const data = JSON.parse(raw);
         if (data && typeof data === "object") {
+          // Silent migration: old pctToNext/shieldingPctToNext → new pctToGo
+          if (data.pctToNext != null && data.pctToGo == null) {
+            data.pctToGo = data.pctToNext;
+          }
+          if (data.shieldingPctToNext != null && data.shieldingPctToGo == null) {
+            data.shieldingPctToGo = data.shieldingPctToNext;
+          }
+          delete data.pctToNext;
+          delete data.shieldingPctToNext;
           Object.assign(this, defaults(), data);
         }
       } catch {
@@ -121,6 +132,7 @@ export function offlineTrainingTab() {
 
     save() {
       const snapshot: PersistedOfflineTraining = {
+        vocation: this.vocation,
         skill: this.skill,
         currentSkill: this.currentSkill,
         pctToGo: this.pctToGo,
@@ -149,34 +161,8 @@ export function offlineTrainingTab() {
       this.save();
     },
 
-    _onCharacterUpdated(detail: unknown) {
-      if (!detail || typeof detail !== "object") return;
-      const d = detail as { vocation?: string };
-      if (typeof d.vocation === "string" && d.vocation !== this.vocation) {
-        this.vocation = d.vocation;
-        // If the picked skill isn't valid for the new vocation, drop it.
-        // (Same defensive sweep trainingTab does.)
-        if (this.skill && !this._skillValidForVocation(this.skill)) {
-          this.skill = "";
-          this.currentSkill = null;
-          this.pctToGo = null;
-          this.targetSkill = null;
-          this.showResults = false;
-          this.shieldingOpen = false;
-          this.shieldingCurrent = null;
-          this.shieldingPctToGo = null;
-          this.save();
-        }
-      }
-    },
-
-    /** Some skills aren't trainable for certain vocations (e.g. paladin
-     *  cannot use a Sword statue). For Phase 2 we keep the dropdown open
-     *  to all 6 skills regardless of vocation — the validator on
-     *  Calculate will catch the (vocation × skill) combos that have no
-     *  defined vocation constant. */
-    _skillValidForVocation(_skill: string): boolean {
-      return true;
+    onVocationChange() {
+      this.save();
     },
 
     onCalculate() {
@@ -191,6 +177,12 @@ export function offlineTrainingTab() {
 
     // ---- Computed ----
 
+    /** Skills valid for the selected vocation (same source of truth as
+     *  the Exercise Weapons calc). */
+    get availableSkills(): readonly TrainableSkill[] {
+      return TRAINING_BY_VOCATION[this.vocation] ?? [];
+    },
+
     get isValid(): boolean {
       const input = this._asInput();
       return input != null && validateOfflineInput(input) == null;
@@ -198,6 +190,7 @@ export function offlineTrainingTab() {
 
     /** First validation error message, or "" if valid. */
     get fieldError(): string {
+      if (!this.vocation) return "Pick a vocation";
       const input = this._asInput();
       if (input == null) return "Fill in all fields";
       return validateOfflineInput(input) ?? "";

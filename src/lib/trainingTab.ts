@@ -11,34 +11,50 @@ import {
   type WeaponResult,
 } from "./trainingCalc";
 
-const STORAGE_KEY = "tibiaplanner.training";
-const CHARACTER_KEY = "tibiaplanner.character";
+const STORAGE_KEY_BASE = "tibiaplanner.training";
 const RESET_EVENT = "app:reset";
-const CHARACTER_EVENT = "character:updated";
 
-// Singleton bus (see characterSheet.ts for the full rationale). Without
-// this, every ClientRouter page swap re-registers window listeners on
-// top of the old ones, and the cascading work eventually freezes the
-// page when the user types fast enough in the calculator.
-let activeInstance: ReturnType<typeof trainingTab> | null = null;
+/**
+ * Storage key per slot. The "primary" slot keeps the pre-multi-slot
+ * key ("tibiaplanner.training") so we don't lose the user's existing
+ * saved state. Secondary slots ("slot-2", "slot-3") suffix the base.
+ */
+function storageKeyFor(slotId: string): string {
+  return slotId === "primary" ? STORAGE_KEY_BASE : `${STORAGE_KEY_BASE}.${slotId}`;
+}
+
+/**
+ * Multi-instance bus. Every mounted trainingTab instance registers
+ * itself under its slotId; RESET dispatches to every live instance.
+ * Newer mount for the same slotId replaces the older one (standard
+ * ClientRouter hydration pattern).
+ *
+ * 2026-09-23: the calc is fully decoupled from the Character Sheet.
+ * Vocation is picked inside the calc itself via a dropdown, so we no
+ * longer listen for `character:updated` or read/write the character
+ * store. Only RESET remains.
+ */
+const activeInstances = new Map<string, ReturnType<typeof trainingTab>>();
 let busInstalled = false;
 function installBus() {
   if (busInstalled || typeof window === "undefined") return;
   busInstalled = true;
   window.addEventListener(RESET_EVENT, () => {
-    activeInstance?.reset();
-  });
-  window.addEventListener(CHARACTER_EVENT, (e: Event) => {
-    activeInstance?._onCharacterUpdated((e as CustomEvent).detail);
+    for (const inst of activeInstances.values()) inst.reset();
   });
 }
 
 export const LOYALTY_OPTIONS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50] as const;
 
+/** Vocations offered in the dropdown. Order matches Tibia's own listing
+ *  in the character info page (alphabetical). */
+export const VOCATIONS = ["druid", "knight", "monk", "paladin", "sorcerer"] as const;
+
 /** Fixed TC ↔ gp rate used to display the gp equivalent of weapon cost. */
 const TC_THRESHOLD_GP = 14000;
 
 interface PersistedTraining {
+  vocation: string;
   skill: string;
   currentSkill: number | null;
   /** In-game "% to go" (remaining %) — see trainingCalc.ts docstring. */
@@ -53,6 +69,7 @@ interface PersistedTraining {
 
 function defaults(): PersistedTraining {
   return {
+    vocation: "",
     skill: "",
     currentSkill: null,
     pctToGo: null,
@@ -65,96 +82,52 @@ function defaults(): PersistedTraining {
   };
 }
 
-interface CharacterSnapshot {
-  vocation?: string;
-  skills?: Record<string, number | null>;
-  pctToGoBySkill?: Record<string, number | null>;
-}
-
-function readCharacter(): CharacterSnapshot {
-  try {
-    const raw = localStorage.getItem(CHARACTER_KEY);
-    if (!raw) return {};
-    const data = JSON.parse(raw);
-    if (data && typeof data === "object") return data as CharacterSnapshot;
-  } catch {
-    // ignore
-  }
-  return {};
-}
-
-/** Write back to the character store (skill value), then notify listeners. */
-function writeCharacterSkill(skill: string, value: number | null) {
-  if (!skill) return;
-  try {
-    const raw = localStorage.getItem(CHARACTER_KEY);
-    const ch = raw && raw.trim() ? JSON.parse(raw) : {};
-    if (typeof ch !== "object" || ch === null) return;
-    ch.skills = ch.skills ?? {};
-    if (ch.skills[skill] === value) return; // no-op, prevents feedback loops
-    ch.skills[skill] = value;
-    localStorage.setItem(CHARACTER_KEY, JSON.stringify(ch));
-    window.dispatchEvent(new CustomEvent(CHARACTER_EVENT, { detail: ch }));
-  } catch {
-    // ignore
-  }
-}
-
-/** Write back the per-skill "% to go" value to the character store. */
-function writeCharacterSkillPct(skill: string, value: number | null) {
-  if (!skill) return;
-  try {
-    const raw = localStorage.getItem(CHARACTER_KEY);
-    const ch = raw && raw.trim() ? JSON.parse(raw) : {};
-    if (typeof ch !== "object" || ch === null) return;
-    ch.pctToGoBySkill = ch.pctToGoBySkill ?? {};
-    if (ch.pctToGoBySkill[skill] === value) return; // no-op
-    ch.pctToGoBySkill[skill] = value;
-    localStorage.setItem(CHARACTER_KEY, JSON.stringify(ch));
-    window.dispatchEvent(new CustomEvent(CHARACTER_EVENT, { detail: ch }));
-  } catch {
-    // ignore
-  }
-}
-
-export function trainingTab() {
+export function trainingTab(slotId: string = "primary") {
   return {
     ...defaults(),
 
-    vocation: "",
+    slotId,
+    VOCATIONS,
     LOYALTY_OPTIONS,
 
     init() {
       installBus();
-      activeInstance = this;
-
-      const ch = readCharacter();
-      this.vocation = ch.vocation ?? "";
+      activeInstances.set(this.slotId, this);
       this.load();
 
-      // If a skill is selected and the character has a value, prefer character.
-      if (this.skill && ch.skills?.[this.skill] != null) {
-        this.currentSkill = ch.skills[this.skill] as number;
-      }
-      // Same for "% to go" — Death sim and Training share this per skill.
-      if (this.skill && ch.pctToGoBySkill?.[this.skill] != null) {
-        this.pctToGo = ch.pctToGoBySkill[this.skill] as number;
-      }
-
-      // Consistency repair: if "Skill to train" is empty (e.g. left over from
-      // a previous session or a dropdown reset), the dependent inputs MUST be
-      // blank. They only make sense paired with a selected skill.
-      if (!this.skill) {
+      // Consistency repair: if "Skill to train" is empty (e.g. left over
+      // from a previous session or a dropdown reset), the dependent
+      // inputs MUST be blank. They only make sense paired with a
+      // selected skill. Same principle if vocation is empty — nothing
+      // downstream is meaningful.
+      if (!this.vocation) {
+        this.skill = "";
+        this.clearSkillDependents();
+      } else if (!this.skill) {
         this.clearSkillDependents();
       }
 
-      // Reactive guard for the same invariant going forward — whenever the
-      // user picks "Select skill" again the inputs clear automatically.
-      // Cast: Alpine's $watch isn't in our local type defs.
-      (this as unknown as { $watch: (path: string, cb: (v: unknown) => void) => void })
-        .$watch("skill", (value) => {
-          if (!value) this.clearSkillDependents();
-        });
+      // Reactive guard: if the user clears the skill dropdown, blank
+      // the dependent inputs. If they change vocation, drop the skill
+      // when it's no longer valid for the new vocation.
+      const alpine = this as unknown as {
+        $watch: (path: string, cb: (v: unknown) => void) => void;
+      };
+      alpine.$watch("skill", (value) => {
+        if (!value) this.clearSkillDependents();
+      });
+      alpine.$watch("vocation", () => {
+        // When vocation changes, wipe every downstream field — including
+        // targetSkill. Half-cleared state (e.g. old targetSkill lingering
+        // for a different vocation's skill) is more confusing than a full
+        // reset.
+        this.skill = "";
+        this.currentSkill = null;
+        this.pctToGo = null;
+        this.targetSkill = null;
+        this.showResults = false;
+        this.save();
+      });
 
       // x-model + x-for ordering workaround. On a ClientRouter swap the
       // page hydrates fresh: <select x-model="skill"> evaluates against
@@ -165,64 +138,35 @@ export function trainingTab() {
       // settled the option list — push the value back into the DOM.
       if (this.skill) {
         const saved = this.skill;
-        const alpine = this as unknown as {
+        const alpineNext = this as unknown as {
           $nextTick: (cb: () => void) => void;
           $root: HTMLElement | undefined;
         };
-        alpine.$nextTick(() => {
-          const select = alpine.$root?.querySelector?.("select");
-          if (select instanceof HTMLSelectElement && select.value !== saved) {
-            select.value = saved;
+        alpineNext.$nextTick(() => {
+          const selects = alpineNext.$root?.querySelectorAll?.("select");
+          if (!selects) return;
+          for (const s of Array.from(selects)) {
+            if (s instanceof HTMLSelectElement && s.value === "" && Array.from(s.options).some((o) => o.value === saved)) {
+              s.value = saved;
+            }
           }
         });
       }
     },
 
-    /**
-     * Handle a `character:updated` event from the singleton bus. Mirrors
-     * vocation / skill / "% to go" changes from the Character Sheet
-     * (or Character Search "Use as profile") without dispatching anything
-     * back — the equality guards short-circuit no-op writes so the same
-     * value doesn't ping-pong.
-     */
-    _onCharacterUpdated(detail: CharacterSnapshot | null | undefined) {
-      if (!detail) return;
-
-      const newVocation = detail.vocation ?? "";
-      if (newVocation !== this.vocation) {
-        this.vocation = newVocation;
-        if (this.skill && !this.availableSkills.find((s) => s.skill === this.skill)) {
-          this.skill = "";
-          this.currentSkill = null;
-          this.pctToGo = null;
-          this.showResults = false;
-          this.save();
-        }
-      }
-
-      if (this.skill && detail.skills) {
-        const incoming = detail.skills[this.skill];
-        if (incoming != null && incoming !== this.currentSkill) {
-          this.currentSkill = incoming as number;
-          this.save();
-        }
-      }
-
-      if (this.skill && detail.pctToGoBySkill) {
-        const incomingPct = detail.pctToGoBySkill[this.skill];
-        if (incomingPct != null && incomingPct !== this.pctToGo) {
-          this.pctToGo = incomingPct as number;
-          this.save();
-        }
-      }
-    },
-
     load() {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+        const raw = localStorage.getItem(storageKeyFor(this.slotId));
         if (!raw) return;
         const data = JSON.parse(raw);
         if (data && typeof data === "object") {
+          // Silent migration: old saves stored the value under `pctToNext`.
+          // Move it to `pctToGo` on load so a re-typed session picks up
+          // seamlessly, and old orphan writes never reappear on save.
+          if (data.pctToNext != null && data.pctToGo == null) {
+            data.pctToGo = data.pctToNext;
+          }
+          delete data.pctToNext;
           Object.assign(this, defaults(), data);
         }
       } catch {
@@ -232,6 +176,7 @@ export function trainingTab() {
 
     save() {
       const snapshot: PersistedTraining = {
+        vocation: this.vocation,
         skill: this.skill,
         currentSkill: this.currentSkill,
         pctToGo: this.pctToGo,
@@ -243,7 +188,7 @@ export function trainingTab() {
         showResults: this.showResults,
       };
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+        localStorage.setItem(storageKeyFor(this.slotId), JSON.stringify(snapshot));
       } catch {
         // ignore
       }
@@ -252,6 +197,16 @@ export function trainingTab() {
     reset() {
       Object.assign(this, defaults());
       this.save();
+    },
+
+    /** Called by the parent trainingSlots wrapper when the user removes
+     *  this slot. Wipes localStorage so a re-added slot starts fresh. */
+    destroySlotStorage() {
+      try {
+        localStorage.removeItem(storageKeyFor(this.slotId));
+      } catch {
+        // ignore
+      }
     },
 
     // ---- Computed ----
@@ -276,6 +231,7 @@ export function trainingTab() {
       const SKILL_CAP = 200;
 
       const errs: Record<string, string> = {};
+      if (!this.vocation) errs.vocation = "Pick a vocation";
       if (!this.skill) errs.skill = "Pick a skill";
       const cur = this.currentSkill;
       const tgt = this.targetSkill;
@@ -367,45 +323,28 @@ export function trainingTab() {
       if (touched) this.save();
     },
 
+    onVocationChange() {
+      this.save();
+    },
+
     onSkillChange() {
-      // Re-sync currentSkill AND "% to go" from character on skill change.
-      const ch = readCharacter();
-      const charSkill = ch.skills?.[this.skill];
-      this.currentSkill =
-        charSkill != null && Number.isFinite(charSkill)
-          ? (charSkill as number)
-          : null;
-      const charPct = ch.pctToGoBySkill?.[this.skill];
-      this.pctToGo =
-        charPct != null && Number.isFinite(charPct)
-          ? (charPct as number)
-          : null;
+      // Standalone calc — no cross-sheet mirroring. Just persist.
       this.save();
     },
 
     onCurrentSkillChange() {
-      // Push back into the character store so both sheets stay in sync.
-      if (this.skill && this.currentSkill != null) {
-        writeCharacterSkill(this.skill, this.currentSkill as number);
-      }
       this.save();
     },
 
     onPctChange() {
       // Clamp to [0, 100] and round to 2 decimals — matches the in-game
-      // "You have ##.##% to go" display and the Death sim input.
+      // skill display ("You have 42.50% to go").
       const v = Number(this.pctToGo);
-      let final: number | null;
       if (Number.isFinite(v)) {
         const clamped = Math.max(0, Math.min(100, v));
-        final = Math.round(clamped * 100) / 100;
-        this.pctToGo = final;
+        this.pctToGo = Math.round(clamped * 100) / 100;
       } else {
-        final = null;
-      }
-      // Mirror to the character store so the Death sim picks it up too.
-      if (this.skill) {
-        writeCharacterSkillPct(this.skill, final);
+        this.pctToGo = null;
       }
       this.save();
     },

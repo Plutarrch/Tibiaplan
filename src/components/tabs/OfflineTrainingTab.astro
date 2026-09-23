@@ -14,34 +14,33 @@
 <div x-data="offlineTrainingTab">
   <div class="flex items-center justify-between gap-4">
     <h2 class="text-[14px] font-medium tracking-wide text-text-primary">Offline Training Calculator</h2>
-    <div class="flex items-center gap-3">
-      <a
-        href="/guides/tibia-offline-training"
-        class="text-[10px] text-text-tertiary transition-colors hover:text-accent-violet"
-      >
-        Read guide →
-      </a>
-      <span
-        x-show="vocation"
-        x-cloak
-        class="text-[10px] uppercase tracking-[0.1em] text-text-tertiary"
-      >
-        Vocation: <span x-text="vocation" class="capitalize text-text-secondary"></span>
-      </span>
-    </div>
+    <a
+      href="/guides/tibia-offline-training"
+      class="text-[10px] text-text-tertiary transition-colors hover:text-accent-violet"
+    >
+      Read guide →
+    </a>
   </div>
 
-  <!-- Empty state: no vocation -->
-  <div
-    x-show="!vocation"
-    class="mt-6 rounded border border-dashed border-border-subtle bg-bg-sunken p-6 text-center text-[12px] text-text-secondary"
-  >
-    Pick a vocation in your
-    <a href="#character-sheet" class="text-accent-violet underline">Character Sheet</a>
-    to use the offline training calculator.
+  <!-- Vocation dropdown — always visible, sits above the main grid.
+       Nothing else appears until a vocation is picked. -->
+  <div class="mt-6">
+    <label class="block max-w-xs">
+      <span class="mb-1 block text-[10px] uppercase tracking-wider text-text-tertiary">Vocation</span>
+      <select
+        x-model="vocation"
+        @change="onVocationChange()"
+        class="w-full rounded border border-border-subtle bg-bg-sunken px-3 py-1.5 text-[12px] capitalize text-text-primary focus:border-accent-violet focus:outline-none"
+      >
+        <option value="">Select vocation</option>
+        <template x-for="v in VOCATIONS" :key="v">
+          <option :value="v" x-text="v" class="capitalize"></option>
+        </template>
+      </select>
+    </label>
   </div>
 
-  <!-- Main content -->
+  <!-- Main content — hidden until vocation is picked -->
   <div x-show="vocation" x-cloak class="mt-6 space-y-6">
     <!-- Inputs grid — same shape as Exercise Weapons -->
     <div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
@@ -53,8 +52,8 @@
           class="w-full rounded border border-border-subtle bg-bg-sunken px-3 py-1.5 text-[12px] text-text-primary focus:border-accent-violet focus:outline-none"
         >
           <option value="">Select skill</option>
-          <template x-for="s in OFFLINE_SKILLS" :key="s">
-            <option :value="s" x-text="s"></option>
+          <template x-for="s in availableSkills" :key="s.skill">
+            <option :value="s.skill" x-text="s.skill"></option>
           </template>
         </select>
       </label>

@@ -136,18 +136,23 @@ export interface OfflineResult {
   inputs: OfflineInput;
 }
 
-/** Format minutes as "Xd Yh Zm" — same style as the stamina calc. */
+/**
+ * Format minutes as a total-hours count with thousands separators, e.g.
+ * "1,247 Hr". Offline training numbers regularly hit the hundreds/thousands
+ * of hours, and mixing "days" was ambiguous (real calendar days? 24-hour
+ * blocks? training-only 12-hour blocks?), so we collapse everything to a
+ * single unit the player can just read.
+ *
+ * Sub-hour results fall back to minutes ("42 min") so the number never
+ * rounds down to "0 Hr" and confuses the user.
+ */
 function formatTime(totalMinutes: number): string {
-  if (!Number.isFinite(totalMinutes) || totalMinutes <= 0) return "0m";
-  const totalSec = Math.round(totalMinutes * 60);
-  const days = Math.floor(totalSec / 86_400);
-  const hours = Math.floor((totalSec % 86_400) / 3600);
-  const mins = Math.floor((totalSec % 3600) / 60);
-  const parts: string[] = [];
-  if (days) parts.push(`${days}d`);
-  if (hours || days) parts.push(`${hours}h`);
-  parts.push(`${mins}m`);
-  return parts.join(" ");
+  if (!Number.isFinite(totalMinutes) || totalMinutes <= 0) return "0 Hr";
+  if (totalMinutes < 60) {
+    return `${Math.max(1, Math.round(totalMinutes)).toLocaleString()} min`;
+  }
+  const hours = Math.round(totalMinutes / 60);
+  return `${hours.toLocaleString()} Hr`;
 }
 
 /**

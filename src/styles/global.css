@@ -33,6 +33,17 @@ html, body {
   line-height: 1.5;
 }
 
+/* Smooth scroll for in-page anchor links (e.g. "Go to calculator" in
+   guides). Respects prefers-reduced-motion for accessibility. */
+html {
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 /* Hide elements that depend on Alpine until it has hydrated. */
 [x-cloak] {
   display: none !important;

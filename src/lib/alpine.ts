@@ -10,6 +10,7 @@ import { offlineTrainingTab } from "./offlineTrainingTab";
 import { rashidLocation } from "./rashidLocation";
 import { tabsControl } from "./tabsControl";
 import { trainingTab } from "./trainingTab";
+import { trainingSlots } from "./trainingSlots";
 
 declare global {
   interface Window {
@@ -19,6 +20,7 @@ declare global {
 
 Alpine.data("characterSheet", characterSheet);
 Alpine.data("trainingTab", trainingTab);
+Alpine.data("trainingSlots", trainingSlots);
 Alpine.data("offlineTrainingTab", offlineTrainingTab);
 Alpine.data("lootTab", lootTab);
 Alpine.data("imbuementsTab", imbuementsTab);
