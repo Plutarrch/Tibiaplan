@@ -1,0 +1,1655 @@
+---
+/**
+ * Weapon Proficiency browser + planner.
+ *
+ * Layout matches the in-game client: perk tree renders as 7 COLUMNS
+ * (one per proficiency level, left→right), each with up to 3 perk
+ * squares stacked vertically. Weapons capped below level 7 leave the
+ * higher columns empty. Descriptions live in a row underneath — one
+ * cell per column, showing the picked perk's effect text (blank if
+ * nothing picked yet).
+ *
+ * Colors are our violet/cyan system, not the client's teal — the
+ * layout is the game's, the styling is ours.
+ *
+ * Coming later: side-by-side comparator, refinement layer, full
+ * ~664-weapon catalog. Current: MVP with 10 curated end-game weapons.
+ */
+import Layout from "../layouts/Layout.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+
+const SITE_URL = "https://tibiaplan.com";
+const PAGE_URL = `${SITE_URL}/weapon-proficiency`;
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "@id": `${PAGE_URL}/#webpage`,
+  name: "Tibia Weapon Proficiency Browser",
+  url: PAGE_URL,
+  description:
+    "Browse and plan Weapon Proficiency perk trees for every eligible Tibia weapon. Side-by-side comparator coming soon.",
+  isPartOf: { "@id": `${SITE_URL}/#website` },
+};
+---
+
+<Layout
+  title="Tibia Weapon Proficiency Browser - TibiaPlan"
+  description="Browse and plan Weapon Proficiency perk trees for every Tibia weapon. Filter by vocation and category, pick perks, compare builds."
+  canonical={PAGE_URL}
+  keywords={[
+    "tibia weapon proficiency",
+    "tibia weapon perks",
+    "tibia proficiency planner",
+    "tibia weapon tree",
+  ]}
+  structuredData={structuredData}
+>
+  <Header />
+
+  <main class="mx-auto max-w-7xl px-4 py-6">
+    <div class="mb-6 flex flex-wrap items-baseline justify-between gap-3">
+      <div>
+        <p class="text-[10px] uppercase tracking-[0.2em] text-accent-violet">
+          Beta
+        </p>
+        <h1 class="mt-1 text-[22px] font-medium tracking-wide text-text-primary">
+          Weapon Proficiency Browser
+        </h1>
+      </div>
+    </div>
+
+    <div x-data="weaponProficiencyTab">
+      <!--
+        Row A (primary weapon slot). Always fully editable, even in
+        compare mode — both rows stay live so you can tweak either
+        weapon's picks without a switch button.
+      -->
+      <div
+        class="grid grid-cols-1 gap-6 lg:grid-cols-[260px_minmax(0,1fr)] lg:items-start"
+      >
+        <!-- ============ SIDEBAR: ARSENAL — selected weapon card + filters + list ============ -->
+        <!--
+          LOCKED DIMENSIONS (owner call): 260px × 540px on desktop.
+          260px comes from the outer grid column definition; 540px is
+          the pinned height that accommodates label + weapon card +
+          Perk Shaping controls + category filter + weapons box
+          (search + grid). Same lock lives on Row B's aside so both
+          ARSENAL panels stay the exact same size. Inner weapons box
+          scrolls internally when content overflows. `lg:items-start`
+          on the parent grid stops sibling columns (Proficiency Tree,
+          compare-mode Row B) from stretching us. Bumped from 465px
+          to 540px when Perk Shaping was added.
+        -->
+        <aside class="rounded-md border border-border-subtle bg-bg-surface p-3 lg:flex lg:h-[540px] lg:flex-col">
+          <!--
+            ARSENAL is the name of the whole sidebar (weapon collection
+            + browser). Sits at the very top so it labels the entire
+            box, sibling to PROFICIENCY TREE and WEAPON SUMMARY on the
+            other panels.
+          -->
+          <p class="mb-3 text-center text-[9px] uppercase tracking-wider text-text-tertiary">
+            Arsenal
+          </p>
+
+          <!--
+            Selected weapon card — mirrors the in-game window and
+            TibiaPal's layout: whichever weapon's tree we're viewing
+            lives up here in the sidebar with its sprite, name, stats,
+            and picked count. Falls back to a hint when nothing's
+            selected.
+          -->
+          <template x-if="selectedWeapon">
+            <div class="mb-3 border-b border-border-subtle pb-3">
+              <!--
+                Weapon name above a large centered sprite — mirrors the
+                in-game window + TibiaPal's sidebar layout, where the
+                weapon is the visual anchor of the tree view.
+              -->
+              <p class="truncate text-center text-[13px] font-medium lowercase text-text-primary" x-text="selectedWeapon.name"></p>
+              <div class="mx-auto mt-2 grid h-24 w-24 place-items-center rounded border border-accent-violet/60 bg-bg-sunken shadow-[0_0_0_2px_rgba(155,138,251,0.15)]">
+                <img
+                  :src="`/sprites/weapons/${selectedWeapon.sprite}`"
+                  :alt="selectedWeapon.name"
+                  class="h-20 w-20 object-contain"
+                  style="image-rendering: pixelated;"
+                  loading="lazy"
+                  decoding="async"
+                  onerror="this.style.display='none'"
+                />
+              </div>
+              <div class="mt-2 flex items-center justify-center gap-2 text-[9px] uppercase tracking-wider">
+                <span class="text-text-tertiary">
+                  <span x-text="selectedWeapon.category"></span>
+                  <span> · </span>
+                  <span x-text="selectedWeapon.hands === 2 ? '2H' : '1H'"></span>
+                  <span> · Lvl </span>
+                  <span x-text="selectedWeapon.levelRequirement"></span>
+                </span>
+                <span class="inline-flex items-center gap-1 rounded border border-accent-violet/40 bg-accent-violet/10 px-1.5 py-0.5 text-accent-violet">
+                  Picked
+                  <span class="font-semibold text-text-primary">
+                    <span x-text="getPickedCount(selectedWeaponId)"></span>/<span x-text="selectedWeapon.perkTree.filter(l => l.choices.length > 0).length"></span>
+                  </span>
+                </span>
+              </div>
+
+            </div>
+          </template>
+
+          <!--
+            Shape / Restore action — Perk Shaping feature. Enabled once
+            the user focuses (picks) a perk in the tree. Splits into
+            Shape + Restore when the focused level already has a shape
+            applied. "Shapes N/2" counter mirrors the in-game 2-perk
+            limit so the plan stays realistic.
+          -->
+          <template x-if="selectedWeapon">
+            <div class="mb-3 border-b border-border-subtle pb-3">
+              <div class="mb-1 flex items-center justify-between text-[9px] uppercase tracking-wider text-text-tertiary">
+                <span>Perk Shaping</span>
+                <span class="normal-case tabular-nums">
+                  <span x-text="getShapedCount(selectedWeaponId)"></span>/2
+                </span>
+              </div>
+              <div class="flex gap-2">
+                <button
+                  type="button"
+                  :disabled="focusedLevel === null || !canShapeAt(selectedWeaponId, focusedLevel, 'A')"
+                  @click="openShapeModal('A')"
+                  :title="focusedLevel === null ? 'Select a perk in the tree first' : (getShaped(selectedWeaponId, focusedLevel) ? 'Change this shape' : 'Shape this perk')"
+                  class="flex flex-1 items-center justify-center gap-1.5 rounded border border-accent-violet/60 bg-accent-violet/10 px-2 py-1.5 text-[11px] font-medium uppercase tracking-wider text-accent-violet transition-colors hover:bg-accent-violet/20 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-accent-violet/10"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5" aria-hidden="true">
+                    <path d="M15 12l-8.5 8.5c-.83.83-2.17.83-3 0 0 0 0 0 0 0-.83-.83-.83-2.17 0-3L12 9" />
+                    <path d="M17.64 15L22 10.64" />
+                    <path d="M20.91 11.7l-1.25-1.25c-.6-.6-.93-1.4-.93-2.25v-.86L16.01 4.6a5.56 5.56 0 0 0-3.94-1.64H9l.92.82A6.18 6.18 0 0 1 12 8.4v1.56l2 2h2.47l2.26 1.91" />
+                  </svg>
+                  Shape
+                </button>
+                <template x-if="focusedLevel !== null && getShaped(selectedWeaponId, focusedLevel)">
+                  <button
+                    type="button"
+                    @click="restoreShape('A', focusedLevel)"
+                    title="Revert this level to its original perk"
+                    class="flex items-center justify-center rounded border border-border-subtle bg-bg-sunken px-3 py-1.5 text-[11px] font-medium uppercase tracking-wider text-text-secondary transition-colors hover:border-danger-red hover:text-danger-red"
+                  >
+                    Restore
+                  </button>
+                </template>
+              </div>
+            </div>
+          </template>
+
+          <!--
+            Filter row: Category dropdown (2/3) + Level check input (1/3).
+            Same row to save vertical space inside the 540px lock.
+            characterLevel is shared with slot B — one character, one
+            filter — so entering it here also narrows the compare grid.
+          -->
+          <div class="mb-3 grid grid-cols-3 gap-2 border-b border-border-subtle pb-3">
+            <label class="col-span-2 block">
+              <span class="mb-1 block text-[9px] uppercase tracking-wider text-text-tertiary">
+                Category
+              </span>
+              <select
+                x-model="categoryFilter"
+                @change="onCategoryFilterChange('A')"
+                class="w-full rounded border border-border-subtle bg-bg-sunken px-2 py-1 text-[11px] capitalize text-text-primary focus:border-accent-violet focus:outline-none"
+              >
+                <option value="">All</option>
+                <template x-for="cat in availableCategories" :key="cat">
+                  <option :value="cat" x-text="cat" class="capitalize"></option>
+                </template>
+              </select>
+            </label>
+            <label class="block">
+              <span class="mb-1 block text-[9px] uppercase tracking-wider text-text-tertiary" title="Hide weapons that require a higher level than your character">
+                My Lvl
+              </span>
+              <input
+                type="text"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                :value="characterLevel ?? ''"
+                @input="setCharacterLevel($event.target.value)"
+                placeholder="—"
+                aria-label="Character level filter"
+                class="w-full rounded border border-border-subtle bg-bg-sunken px-2 py-1 text-[11px] text-text-primary focus:border-accent-violet focus:outline-none"
+              />
+            </label>
+          </div>
+
+          <!--
+            Fixed-size weapons box (mirrors the in-game window):
+            - Search input inside the box, filters by name reactively.
+            - Grid of icon-only tiles below, fills the rest of the box
+              and scrolls internally when weapons overflow. The box
+              itself never grows or shrinks — the scrollbar handles it.
+            Tooltip on hover exposes the weapon name; small badge shows
+            the level requirement so tier reads at a glance.
+          -->
+          <div class="flex min-h-0 flex-col overflow-hidden rounded border border-border-subtle bg-bg-sunken lg:flex-1">
+            <div class="flex items-center border-b border-border-subtle">
+              <input
+                type="text"
+                :value="searchQuery"
+                @input="setSearchQuery($event.target.value)"
+                placeholder="Type to search..."
+                class="min-w-0 flex-1 bg-transparent px-3 py-2 text-[11px] text-text-primary placeholder:text-text-tertiary focus:outline-none"
+              />
+              <span class="shrink-0 px-2 text-[10px] tabular-nums text-text-tertiary">
+                <span x-text="filteredWeapons.length"></span> / <span x-text="ALL_WEAPONS.length"></span>
+                <!--
+                  Level-filter hint: when My Lvl hides matches the user
+                  would otherwise see, surface a small warning so the
+                  counter isn't misread as "search is broken". Only
+                  renders when there's actually something hidden.
+                -->
+                <span
+                  x-show="hiddenByLevelCountA > 0"
+                  :title="`${hiddenByLevelCountA} more weapon(s) match but require a higher level than ${characterLevel}. Clear My Lvl to see them.`"
+                  class="ml-1 cursor-help text-accent-violet"
+                >
+                  · <span x-text="hiddenByLevelCountA"></span> hidden by Lvl
+                </span>
+              </span>
+            </div>
+
+            <ul x-ref="weaponsListA" class="grid min-h-0 flex-1 grid-cols-4 gap-1.5 overflow-y-auto p-1.5">
+              <template x-for="w in filteredWeapons" :key="w.id">
+                <li>
+                  <button
+                    type="button"
+                    @click="selectWeapon(w.id)"
+                    :title="w.name"
+                    :aria-label="w.name"
+                    class="relative grid aspect-square w-full place-items-center rounded border transition-colors"
+                    :class="selectedWeaponId === w.id
+                      ? 'border-accent-violet bg-accent-violet/15'
+                      : 'border-border-subtle bg-bg-surface hover:border-accent-violet/60'"
+                  >
+                    <img
+                      :src="`/sprites/weapons/${w.sprite}`"
+                      :alt="w.name"
+                      class="h-full w-full object-contain p-1"
+                      style="image-rendering: pixelated;"
+                      loading="lazy"
+                      decoding="async"
+                      onerror="this.style.visibility='hidden'"
+                    />
+                    <span class="absolute bottom-0 right-0.5 text-[9px] leading-tight text-text-tertiary" x-text="w.levelRequirement"></span>
+                  </button>
+                </li>
+              </template>
+              <template x-if="filteredWeapons.length === 0">
+                <li class="col-span-4 px-2 py-6 text-center text-[11px] text-text-tertiary">
+                  No weapons match.
+                </li>
+              </template>
+            </ul>
+          </div>
+        </aside>
+
+        <!-- ============ MAIN PANEL: header + perk grid + descriptions ============ -->
+        <section>
+          <template x-if="!selectedWeapon">
+            <div class="rounded-md border border-dashed border-border-subtle bg-bg-sunken p-10 text-center text-[12px] text-text-tertiary">
+              Pick a weapon from the list to see its proficiency tree.
+            </div>
+          </template>
+
+          <template x-if="selectedWeapon">
+            <div>
+              <!--
+                Perk grid: 7 columns × up to 3 rows, mirroring the
+                in-game window. Locked to 465px on desktop to match
+                ARSENAL, with the extra vertical space at the bottom
+                hosting the COMPARE / Back action button.
+              -->
+              <article class="rounded-md border border-border-subtle bg-bg-surface p-4 lg:flex lg:h-[540px] lg:flex-col">
+                <!--
+                  Wrapper for header + perks + descriptions. Each of the
+                  three inner grids uses `divide-x` to draw visible
+                  vertical dividers between levels (aligned column to
+                  column because all three grids share the same 7-col
+                  layout and min-width).
+                -->
+                <p class="mb-3 text-center text-[9px] uppercase tracking-wider text-text-tertiary">
+                  Proficiency Tree<span x-show="compareMode"> · A</span>
+                </p>
+                <!-- Level headers row -->
+                <div class="mb-2 grid grid-cols-7 divide-x divide-border-subtle min-w-[560px]">
+                  <template x-for="lvl in selectedWeapon.perkTree" :key="`${selectedWeaponId}-${lvl.level}`">
+                    <p class="px-1 py-1 text-center text-[9px] uppercase tracking-wider text-text-tertiary"
+                       :class="lvl.choices.length === 0 && 'opacity-30'">
+                      Level <span x-text="lvl.level"></span>
+                    </p>
+                  </template>
+                </div>
+
+                <!-- Perk squares grid — outer wrapper handles horizontal
+                     overflow on narrow screens so the 7 columns don't
+                     get squished. -->
+                <div class="overflow-x-auto">
+                  <div class="grid grid-cols-7 divide-x divide-border-subtle min-w-[560px]">
+                    <!--
+                      One <div> per column. Fixed height so columns with
+                      1 or 2 perks vertically-center them like the game
+                      (empty space above AND below) instead of pinning
+                      to the top. Height = 3 × 72px perk + 2 × 8px gap.
+                    -->
+                    <template x-for="lvl in selectedWeapon.perkTree" :key="`${selectedWeaponId}-${lvl.level}`">
+                      <div class="flex h-[216px] flex-col items-center justify-center gap-3 px-1">
+                        <template x-for="(perk, idx) in lvl.choices" :key="`${selectedWeaponId}-${lvl.level}-${idx}`">
+                          <button
+                            type="button"
+                            @click="togglePerk(selectedWeaponId, lvl.level, idx)"
+                            :aria-pressed="getPick(selectedWeaponId, lvl.level) === idx"
+                            :title="`${perk.name} - ${perk.description}`"
+                            class="grid h-[64px] w-[64px] place-items-center rounded border transition-all"
+                            :class="{
+                              'border-success bg-success/15 shadow-[0_0_16px_2px_rgba(111,231,183,0.55)]': getPick(selectedWeaponId, lvl.level) === idx && getShapedForPick(selectedWeaponId, lvl.level, idx),
+                              'border-success bg-bg-sunken shadow-[0_0_0_1px_rgba(111,231,183,0.4)]': getPick(selectedWeaponId, lvl.level) === idx && focusedLevel === lvl.level && !getShapedForPick(selectedWeaponId, lvl.level, idx),
+                              'border-accent-violet bg-bg-sunken shadow-[0_0_0_1px_rgba(155,138,251,0.25)]': getPick(selectedWeaponId, lvl.level) === idx && focusedLevel !== lvl.level && !getShapedForPick(selectedWeaponId, lvl.level, idx),
+                              'border-success/50 bg-bg-sunken opacity-70 shadow-[0_0_0_1px_rgba(111,231,183,0.2)] hover:opacity-100 hover:border-success': getPick(selectedWeaponId, lvl.level) !== idx && getShapedChoiceIndex(selectedWeaponId, lvl.level) === idx,
+                              'border-border-subtle bg-bg-sunken opacity-60 hover:border-accent-violet/60 hover:opacity-100': getPick(selectedWeaponId, lvl.level) !== idx && getShapedChoiceIndex(selectedWeaponId, lvl.level) !== idx
+                            }"
+                          >
+                            <!--
+                              Perk icon renders as a composite that mirrors
+                              the in-game client: a base sprite (either the
+                              non-spell type icon or the spell icon) with
+                              an optional augment badge overlaid on the
+                              bottom-right. If neither is set, fall back to
+                              the perk's initials so the slot is never blank.
+                            -->
+                            <template x-if="perk.base">
+                              <div class="relative grid h-full w-full place-items-center">
+                                <!--
+                                  Base icon centered at ~80% of the
+                                  square (matches the breathing room
+                                  around perks in the in-game window),
+                                  with the augment badge overlaid
+                                  top-right at ~40% for readability
+                                  at a glance.
+                                -->
+                                <img
+                                  :src="`/sprites/perks/${resolvedIconForPerk(selectedWeaponId, lvl.level, idx, perk.base, 'A')}`"
+                                  :alt="perk.name"
+                                  class="h-full w-full object-contain"
+                                  style="image-rendering: pixelated;"
+                                  loading="lazy"
+                                  decoding="async"
+                                  onerror="this.style.display='none'"
+                                />
+                                <template x-if="resolvedAugmentForPerk(selectedWeaponId, lvl.level, idx, perk.augment, 'A')">
+                                  <img
+                                    :src="`/sprites/perks/${resolvedAugmentForPerk(selectedWeaponId, lvl.level, idx, perk.augment, 'A')}`"
+                                    alt=""
+                                    aria-hidden="true"
+                                    class="absolute right-0 top-0 h-7 w-7 object-contain drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]"
+                                    style="image-rendering: pixelated;"
+                                    loading="lazy"
+                                    decoding="async"
+                                  />
+                                </template>
+                              </div>
+                            </template>
+                            <template x-if="!perk.base">
+                              <span class="text-[16px] font-semibold text-text-tertiary"
+                                    x-text="perk.name.split(' ').slice(0,2).map(w => w[0]).join('')"></span>
+                            </template>
+                          </button>
+                        </template>
+                        <!-- Empty slot placeholder for columns with fewer
+                             than 3 perks OR levels that don't exist yet
+                             (weapons capped below level 7). -->
+                        <template x-if="lvl.choices.length === 0">
+                          <div class="h-[64px] w-[64px] rounded border border-dashed border-border-subtle/40 opacity-40"></div>
+                        </template>
+                      </div>
+                    </template>
+                  </div>
+
+                  <!-- Description row: 7 cells, one per column,
+                       showing the effect text of the picked perk in
+                       that column. Empty cells when nothing picked. -->
+                  <div class="mt-3 grid grid-cols-7 divide-x divide-border-subtle border-t border-border-subtle pt-3 min-w-[560px]">
+                    <template x-for="lvl in selectedWeapon.perkTree" :key="`desc-${selectedWeaponId}-${lvl.level}`">
+                      <div class="min-h-[48px] px-1 text-[10px] leading-snug text-text-secondary">
+                        <template x-if="getPick(selectedWeaponId, lvl.level) >= 0 && lvl.choices[getPick(selectedWeaponId, lvl.level)]">
+                          <span x-text="resolvedDescriptionForLevel(selectedWeaponId, lvl.level, lvl.choices[getPick(selectedWeaponId, lvl.level)].description, 'A')"></span>
+                        </template>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+
+                <!--
+                  Bottom action strip (aligned right). Fills the space
+                  reserved by the 465px height lock. `pointer-events-auto`
+                  keeps this row clickable even when the parent is locked
+                  and grayed out during compare mode.
+                -->
+                <div class="mt-auto flex justify-end gap-2 pt-4 pointer-events-auto">
+                  <!--
+                    Share button — copies a URL that hydrates the exact
+                    view the sharer is looking at (weapon + picks +
+                    shapes, and slot B too when compare mode is on).
+                    Uses the hash fragment so nothing hits the server.
+                  -->
+                  <button
+                    type="button"
+                    @click="copyShareUrl()"
+                    :title="shareCopied ? 'Copied to clipboard' : 'Copy shareable link'"
+                    class="inline-flex items-center gap-1.5 rounded-md border px-4 py-2 text-[11px] font-medium uppercase tracking-wider transition-colors"
+                    :class="shareCopied
+                      ? 'border-success-green/60 bg-success-green/10 text-success-green'
+                      : 'border-border-emphasis/60 bg-transparent text-text-secondary hover:bg-white/5 hover:text-text-primary'"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5" aria-hidden="true">
+                      <circle cx="18" cy="5" r="3"></circle>
+                      <circle cx="6" cy="12" r="3"></circle>
+                      <circle cx="18" cy="19" r="3"></circle>
+                      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                    </svg>
+                    <span x-text="shareCopied ? 'Copied' : 'Share'"></span>
+                  </button>
+                  <!-- Normal mode: COMPARE button -->
+                  <template x-if="!compareMode">
+                    <button
+                      type="button"
+                      @click="enterCompare()"
+                      class="rounded-md border border-accent-violet/60 bg-accent-violet/10 px-5 py-2 text-[11px] font-medium uppercase tracking-wider text-accent-violet transition-colors hover:bg-accent-violet/20"
+                    >
+                      Compare
+                    </button>
+                  </template>
+                </div>
+              </article>
+            </div>
+          </template>
+        </section>
+      </div>
+
+      <!--
+        Row B (comparison weapon slot). Only rendered when compareMode
+        is on. Same shape as Row A but bound to slot-B state so both
+        weapons live in parallel. Close-compare (X in top-right) is the
+        only way to exit compare mode.
+      -->
+      <template x-if="compareMode">
+        <div
+          class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[260px_minmax(0,1fr)] lg:items-start"
+        >
+        <!-- ============ SIDEBAR: ARSENAL — selected weapon card + filters + list ============ -->
+        <!--
+          LOCKED DIMENSIONS (owner call): 260px × 540px on desktop.
+          260px comes from the outer grid column definition; 540px is
+          the pinned height that accommodates label + weapon card +
+          Perk Shaping controls + category filter + weapons box
+          (search + grid). Same lock lives on Row B's aside so both
+          ARSENAL panels stay the exact same size. Inner weapons box
+          scrolls internally when content overflows. `lg:items-start`
+          on the parent grid stops sibling columns (Proficiency Tree,
+          compare-mode Row B) from stretching us. Bumped from 465px
+          to 540px when Perk Shaping was added.
+        -->
+        <aside class="rounded-md border border-border-subtle bg-bg-surface p-3 lg:flex lg:h-[540px] lg:flex-col">
+          <!--
+            ARSENAL is the name of the whole sidebar (weapon collection
+            + browser). Sits at the very top so it labels the entire
+            box, sibling to PROFICIENCY TREE and WEAPON SUMMARY on the
+            other panels.
+          -->
+          <p class="mb-3 text-center text-[9px] uppercase tracking-wider text-text-tertiary">
+            Arsenal
+          </p>
+
+          <!--
+            Selected weapon card — mirrors the in-game window and
+            TibiaPal's layout: whichever weapon's tree we're viewing
+            lives up here in the sidebar with its sprite, name, stats,
+            and picked count. Falls back to a hint when nothing's
+            selected.
+          -->
+          <template x-if="selectedWeaponB">
+            <div class="mb-3 border-b border-border-subtle pb-3">
+              <!--
+                Weapon name above a large centered sprite — mirrors the
+                in-game window + TibiaPal's sidebar layout, where the
+                weapon is the visual anchor of the tree view.
+              -->
+              <p class="truncate text-center text-[13px] font-medium lowercase text-text-primary" x-text="selectedWeaponB.name"></p>
+              <div class="mx-auto mt-2 grid h-24 w-24 place-items-center rounded border border-accent-violet/60 bg-bg-sunken shadow-[0_0_0_2px_rgba(155,138,251,0.15)]">
+                <img
+                  :src="`/sprites/weapons/${selectedWeaponB.sprite}`"
+                  :alt="selectedWeaponB.name"
+                  class="h-20 w-20 object-contain"
+                  style="image-rendering: pixelated;"
+                  loading="lazy"
+                  decoding="async"
+                  onerror="this.style.display='none'"
+                />
+              </div>
+              <div class="mt-2 flex items-center justify-center gap-2 text-[9px] uppercase tracking-wider">
+                <span class="text-text-tertiary">
+                  <span x-text="selectedWeaponB.category"></span>
+                  <span> · </span>
+                  <span x-text="selectedWeaponB.hands === 2 ? '2H' : '1H'"></span>
+                  <span> · Lvl </span>
+                  <span x-text="selectedWeaponB.levelRequirement"></span>
+                </span>
+                <span class="inline-flex items-center gap-1 rounded border border-accent-violet/40 bg-accent-violet/10 px-1.5 py-0.5 text-accent-violet">
+                  Picked
+                  <span class="font-semibold text-text-primary">
+                    <span x-text="getPickedCountB(selectedWeaponIdB)"></span>/<span x-text="selectedWeaponB.perkTree.filter(l => l.choices.length > 0).length"></span>
+                  </span>
+                </span>
+              </div>
+
+            </div>
+          </template>
+
+          <!-- Perk Shaping (slot B) — mirror of slot A's control block. -->
+          <template x-if="selectedWeaponB">
+            <div class="mb-3 border-b border-border-subtle pb-3">
+              <div class="mb-1 flex items-center justify-between text-[9px] uppercase tracking-wider text-text-tertiary">
+                <span>Perk Shaping</span>
+                <span class="normal-case tabular-nums">
+                  <span x-text="getShapedCountB(selectedWeaponIdB)"></span>/2
+                </span>
+              </div>
+              <div class="flex gap-2">
+                <button
+                  type="button"
+                  :disabled="focusedLevelB === null || !canShapeAt(selectedWeaponIdB, focusedLevelB, 'B')"
+                  @click="openShapeModal('B')"
+                  :title="focusedLevelB === null ? 'Select a perk in the tree first' : (getShapedB(selectedWeaponIdB, focusedLevelB) ? 'Change this shape' : 'Shape this perk')"
+                  class="flex flex-1 items-center justify-center gap-1.5 rounded border border-accent-violet/60 bg-accent-violet/10 px-2 py-1.5 text-[11px] font-medium uppercase tracking-wider text-accent-violet transition-colors hover:bg-accent-violet/20 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-accent-violet/10"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5" aria-hidden="true">
+                    <path d="M15 12l-8.5 8.5c-.83.83-2.17.83-3 0 0 0 0 0 0 0-.83-.83-.83-2.17 0-3L12 9" />
+                    <path d="M17.64 15L22 10.64" />
+                    <path d="M20.91 11.7l-1.25-1.25c-.6-.6-.93-1.4-.93-2.25v-.86L16.01 4.6a5.56 5.56 0 0 0-3.94-1.64H9l.92.82A6.18 6.18 0 0 1 12 8.4v1.56l2 2h2.47l2.26 1.91" />
+                  </svg>
+                  Shape
+                </button>
+                <template x-if="focusedLevelB !== null && getShapedB(selectedWeaponIdB, focusedLevelB)">
+                  <button
+                    type="button"
+                    @click="restoreShape('B', focusedLevelB)"
+                    title="Revert this level to its original perk"
+                    class="flex items-center justify-center rounded border border-border-subtle bg-bg-sunken px-3 py-1.5 text-[11px] font-medium uppercase tracking-wider text-text-secondary transition-colors hover:border-danger-red hover:text-danger-red"
+                  >
+                    Restore
+                  </button>
+                </template>
+              </div>
+            </div>
+          </template>
+
+          <!--
+            Filter row: Category dropdown (2/3) + shared My Lvl input
+            (1/3). Level filter is deliberately the same state as slot
+            A's — one character, one filter — so typing in either row
+            updates both grids. Same-row layout preserves the 540px
+            height lock (no vertical addition).
+          -->
+          <div class="mb-3 grid grid-cols-3 gap-2 border-b border-border-subtle pb-3">
+            <label class="col-span-2 block">
+              <span class="mb-1 block text-[9px] uppercase tracking-wider text-text-tertiary">
+                Category
+              </span>
+              <select
+                x-model="categoryFilterB"
+                @change="onCategoryFilterChange('B')"
+                class="w-full rounded border border-border-subtle bg-bg-sunken px-2 py-1 text-[11px] capitalize text-text-primary focus:border-accent-violet focus:outline-none"
+              >
+                <option value="">All</option>
+                <template x-for="cat in availableCategories" :key="cat">
+                  <option :value="cat" x-text="cat" class="capitalize"></option>
+                </template>
+              </select>
+            </label>
+            <label class="block">
+              <span class="mb-1 block text-[9px] uppercase tracking-wider text-text-tertiary" title="Hide weapons that require a higher level than your character">
+                My Lvl
+              </span>
+              <input
+                type="text"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                :value="characterLevel ?? ''"
+                @input="setCharacterLevel($event.target.value)"
+                placeholder="—"
+                aria-label="Character level filter"
+                class="w-full rounded border border-border-subtle bg-bg-sunken px-2 py-1 text-[11px] text-text-primary focus:border-accent-violet focus:outline-none"
+              />
+            </label>
+          </div>
+
+          <!--
+            Fixed-size weapons box (mirrors the in-game window):
+            - Search input inside the box, filters by name reactively.
+            - Grid of icon-only tiles below, fills the rest of the box
+              and scrolls internally when weapons overflow. The box
+              itself never grows or shrinks — the scrollbar handles it.
+            Tooltip on hover exposes the weapon name; small badge shows
+            the level requirement so tier reads at a glance.
+          -->
+          <div class="flex min-h-0 flex-col overflow-hidden rounded border border-border-subtle bg-bg-sunken lg:flex-1">
+            <div class="flex items-center border-b border-border-subtle">
+              <input
+                type="text"
+                :value="searchQueryB"
+                @input="setSearchQueryB($event.target.value)"
+                placeholder="Type to search..."
+                class="min-w-0 flex-1 bg-transparent px-3 py-2 text-[11px] text-text-primary placeholder:text-text-tertiary focus:outline-none"
+              />
+              <span class="shrink-0 px-2 text-[10px] tabular-nums text-text-tertiary">
+                <span x-text="filteredWeaponsB.length"></span> / <span x-text="ALL_WEAPONS.length"></span>
+                <span
+                  x-show="hiddenByLevelCountB > 0"
+                  :title="`${hiddenByLevelCountB} more weapon(s) match but require a higher level than ${characterLevel}. Clear My Lvl to see them.`"
+                  class="ml-1 cursor-help text-accent-violet"
+                >
+                  · <span x-text="hiddenByLevelCountB"></span> hidden by Lvl
+                </span>
+              </span>
+            </div>
+
+            <ul x-ref="weaponsListB" class="grid min-h-0 flex-1 grid-cols-4 gap-1.5 overflow-y-auto p-1.5">
+              <template x-for="w in filteredWeaponsB" :key="w.id">
+                <li>
+                  <button
+                    type="button"
+                    @click="selectWeaponB(w.id)"
+                    :title="w.name"
+                    :aria-label="w.name"
+                    class="relative grid aspect-square w-full place-items-center rounded border transition-colors"
+                    :class="selectedWeaponIdB === w.id
+                      ? 'border-accent-violet bg-accent-violet/15'
+                      : 'border-border-subtle bg-bg-surface hover:border-accent-violet/60'"
+                  >
+                    <img
+                      :src="`/sprites/weapons/${w.sprite}`"
+                      :alt="w.name"
+                      class="h-full w-full object-contain p-1"
+                      style="image-rendering: pixelated;"
+                      loading="lazy"
+                      decoding="async"
+                      onerror="this.style.visibility='hidden'"
+                    />
+                    <span class="absolute bottom-0 right-0.5 text-[9px] leading-tight text-text-tertiary" x-text="w.levelRequirement"></span>
+                  </button>
+                </li>
+              </template>
+              <template x-if="filteredWeaponsB.length === 0">
+                <li class="col-span-4 px-2 py-6 text-center text-[11px] text-text-tertiary">
+                  No weapons match.
+                </li>
+              </template>
+            </ul>
+          </div>
+        </aside>
+
+        <!-- ============ MAIN PANEL: header + perk grid + descriptions ============ -->
+        <section>
+          <template x-if="!selectedWeaponB">
+            <div class="rounded-md border border-dashed border-border-subtle bg-bg-sunken p-10 text-center text-[12px] text-text-tertiary">
+              Pick a weapon from the list to see its proficiency tree.
+            </div>
+          </template>
+
+          <template x-if="selectedWeaponB">
+            <div>
+              <!--
+                Perk grid: 7 columns × up to 3 rows, mirroring the
+                in-game window. Locked to 465px on desktop to match
+                ARSENAL, with the extra vertical space at the bottom
+                hosting the COMPARE / Back action button.
+              -->
+              <article class="relative rounded-md border border-border-subtle bg-bg-surface p-4 lg:flex lg:h-[540px] lg:flex-col">
+                <!--
+                  Close Compare (X) — top-left of Tree B's article
+                  (article is `relative`, this button is absolutely
+                  positioned). Hover tooltip via `title` attribute so
+                  the intent is unambiguous.
+                -->
+                <button
+                  type="button"
+                  @click="exitCompare()"
+                  title="Close Compare"
+                  aria-label="Close Compare"
+                  class="pointer-events-auto absolute right-2 top-2 z-10 grid h-6 w-6 place-items-center rounded border border-border-subtle bg-bg-sunken text-text-secondary transition-colors hover:border-danger-red hover:text-danger-red"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-3 w-3" aria-hidden="true">
+                    <path d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L8.94 10l-4.72 4.72a.75.75 0 1 0 1.06 1.06L10 11.06l4.72 4.72a.75.75 0 1 0 1.06-1.06L11.06 10l4.72-4.72a.75.75 0 0 0-1.06-1.06L10 8.94 5.28 4.22Z" />
+                  </svg>
+                </button>
+                <!--
+                  Wrapper for header + perks + descriptions. Each of the
+                  three inner grids uses `divide-x` to draw visible
+                  vertical dividers between levels (aligned column to
+                  column because all three grids share the same 7-col
+                  layout and min-width).
+                -->
+                <p class="mb-3 text-center text-[9px] uppercase tracking-wider text-text-tertiary">
+                  Proficiency Tree · B
+                </p>
+                <!-- Level headers row -->
+                <div class="mb-2 grid grid-cols-7 divide-x divide-border-subtle min-w-[560px]">
+                  <template x-for="lvl in selectedWeaponB.perkTree" :key="`${selectedWeaponIdB}-${lvl.level}`">
+                    <p class="px-1 py-1 text-center text-[9px] uppercase tracking-wider text-text-tertiary"
+                       :class="lvl.choices.length === 0 && 'opacity-30'">
+                      Level <span x-text="lvl.level"></span>
+                    </p>
+                  </template>
+                </div>
+
+                <!-- Perk squares grid — outer wrapper handles horizontal
+                     overflow on narrow screens so the 7 columns don't
+                     get squished. -->
+                <div class="overflow-x-auto">
+                  <div class="grid grid-cols-7 divide-x divide-border-subtle min-w-[560px]">
+                    <!--
+                      One <div> per column. Fixed height so columns with
+                      1 or 2 perks vertically-center them like the game
+                      (empty space above AND below) instead of pinning
+                      to the top. Height = 3 × 72px perk + 2 × 8px gap.
+                    -->
+                    <template x-for="lvl in selectedWeaponB.perkTree" :key="`${selectedWeaponIdB}-${lvl.level}`">
+                      <div class="flex h-[216px] flex-col items-center justify-center gap-3 px-1">
+                        <template x-for="(perk, idx) in lvl.choices" :key="`${selectedWeaponIdB}-${lvl.level}-${idx}`">
+                          <button
+                            type="button"
+                            @click="togglePerkB(selectedWeaponIdB, lvl.level, idx)"
+                            :aria-pressed="getPickB(selectedWeaponIdB, lvl.level) === idx"
+                            :title="`${perk.name} - ${perk.description}`"
+                            class="grid h-[64px] w-[64px] place-items-center rounded border transition-all"
+                            :class="{
+                              'border-success bg-success/15 shadow-[0_0_16px_2px_rgba(111,231,183,0.55)]': getPickB(selectedWeaponIdB, lvl.level) === idx && getShapedForPickB(selectedWeaponIdB, lvl.level, idx),
+                              'border-success bg-bg-sunken shadow-[0_0_0_1px_rgba(111,231,183,0.4)]': getPickB(selectedWeaponIdB, lvl.level) === idx && focusedLevelB === lvl.level && !getShapedForPickB(selectedWeaponIdB, lvl.level, idx),
+                              'border-accent-violet bg-bg-sunken shadow-[0_0_0_1px_rgba(155,138,251,0.25)]': getPickB(selectedWeaponIdB, lvl.level) === idx && focusedLevelB !== lvl.level && !getShapedForPickB(selectedWeaponIdB, lvl.level, idx),
+                              'border-success/50 bg-bg-sunken opacity-70 shadow-[0_0_0_1px_rgba(111,231,183,0.2)] hover:opacity-100 hover:border-success': getPickB(selectedWeaponIdB, lvl.level) !== idx && getShapedChoiceIndexB(selectedWeaponIdB, lvl.level) === idx,
+                              'border-border-subtle bg-bg-sunken opacity-60 hover:border-accent-violet/60 hover:opacity-100': getPickB(selectedWeaponIdB, lvl.level) !== idx && getShapedChoiceIndexB(selectedWeaponIdB, lvl.level) !== idx
+                            }"
+                          >
+                            <!--
+                              Perk icon renders as a composite that mirrors
+                              the in-game client: a base sprite (either the
+                              non-spell type icon or the spell icon) with
+                              an optional augment badge overlaid on the
+                              bottom-right. If neither is set, fall back to
+                              the perk's initials so the slot is never blank.
+                            -->
+                            <template x-if="perk.base">
+                              <div class="relative grid h-full w-full place-items-center">
+                                <!--
+                                  Base icon centered at ~80% of the
+                                  square (matches the breathing room
+                                  around perks in the in-game window),
+                                  with the augment badge overlaid
+                                  top-right at ~40% for readability
+                                  at a glance.
+                                -->
+                                <img
+                                  :src="`/sprites/perks/${resolvedIconForPerk(selectedWeaponIdB, lvl.level, idx, perk.base, 'B')}`"
+                                  :alt="perk.name"
+                                  class="h-full w-full object-contain"
+                                  style="image-rendering: pixelated;"
+                                  loading="lazy"
+                                  decoding="async"
+                                  onerror="this.style.display='none'"
+                                />
+                                <template x-if="resolvedAugmentForPerk(selectedWeaponIdB, lvl.level, idx, perk.augment, 'B')">
+                                  <img
+                                    :src="`/sprites/perks/${resolvedAugmentForPerk(selectedWeaponIdB, lvl.level, idx, perk.augment, 'B')}`"
+                                    alt=""
+                                    aria-hidden="true"
+                                    class="absolute right-0 top-0 h-7 w-7 object-contain drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]"
+                                    style="image-rendering: pixelated;"
+                                    loading="lazy"
+                                    decoding="async"
+                                  />
+                                </template>
+                              </div>
+                            </template>
+                            <template x-if="!perk.base">
+                              <span class="text-[16px] font-semibold text-text-tertiary"
+                                    x-text="perk.name.split(' ').slice(0,2).map(w => w[0]).join('')"></span>
+                            </template>
+                          </button>
+                        </template>
+                        <!-- Empty slot placeholder for columns with fewer
+                             than 3 perks OR levels that don't exist yet
+                             (weapons capped below level 7). -->
+                        <template x-if="lvl.choices.length === 0">
+                          <div class="h-[64px] w-[64px] rounded border border-dashed border-border-subtle/40 opacity-40"></div>
+                        </template>
+                      </div>
+                    </template>
+                  </div>
+
+                  <!-- Description row: 7 cells, one per column,
+                       showing the effect text of the picked perk in
+                       that column. Empty cells when nothing picked. -->
+                  <div class="mt-3 grid grid-cols-7 divide-x divide-border-subtle border-t border-border-subtle pt-3 min-w-[560px]">
+                    <template x-for="lvl in selectedWeaponB.perkTree" :key="`desc-${selectedWeaponIdB}-${lvl.level}`">
+                      <div class="min-h-[48px] px-1 text-[10px] leading-snug text-text-secondary">
+                        <template x-if="getPickB(selectedWeaponIdB, lvl.level) >= 0 && lvl.choices[getPickB(selectedWeaponIdB, lvl.level)]">
+                          <span x-text="resolvedDescriptionForLevel(selectedWeaponIdB, lvl.level, lvl.choices[getPickB(selectedWeaponIdB, lvl.level)].description, 'B')"></span>
+                        </template>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+
+                <!--
+                  Bottom action strip (aligned right). Fills the space
+                  reserved by the 465px height lock. `pointer-events-auto`
+                  keeps this row clickable even when the parent is locked
+                  and grayed out during compare mode.
+                -->
+                <div class="mt-auto flex justify-end pt-4 pointer-events-auto">
+                </div>
+              </article>
+            </div>
+          </template>
+        </section>
+        </div>
+      </template>
+
+      <!--
+        Summary row — sits BELOW the sidebar + tree grid so each summary
+        can occupy half the combined width (sidebar + tree). In compare
+        mode the second column fills with the comparison weapon's
+        summary; single-weapon mode leaves it empty. Vertical stacking
+        keeps stat rows readable and prep for the left-to-right compare.
+      -->
+      <template x-if="selectedWeapon">
+        <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+                  <!--
+                    Weapon Summary — the differentiator vs TibiaPal. Rolls up
+                    the base stats + effective bonuses from picked perks.
+                    Stats that a perk boosts render in green with a native
+                    tooltip showing "base + perk = total". Everything
+                    situational (bestiary, boss/sinister, perfect shot, crit,
+                    scaling, on-kill, augments) lives as tight text lines in
+                    its own section so the numeric block stays scannable.
+                  -->
+                  <article class="rounded-md border border-border-subtle bg-bg-surface p-4">
+                    <!--
+                      Header: weapon sprite + name. Anchors the summary to
+                      the weapon it belongs to (matters most in compare
+                      mode when two summaries sit side by side and need to
+                      read clearly on their own).
+                    -->
+                    <div class="mb-3 flex flex-col items-center gap-2 border-b border-border-subtle pb-3">
+                      <p class="text-[9px] uppercase tracking-wider text-text-tertiary">Weapon Summary<span x-show="compareMode"> · A</span></p>
+                      <div class="grid h-16 w-16 shrink-0 place-items-center rounded border border-accent-violet/40 bg-bg-sunken">
+                        <img
+                          :src="`/sprites/weapons/${selectedWeapon.sprite}`"
+                          :alt="selectedWeapon.name"
+                          class="h-full w-full object-contain p-1"
+                          style="image-rendering: pixelated;"
+                          loading="lazy"
+                          decoding="async"
+                          onerror="this.style.display='none'"
+                        />
+                      </div>
+                      <p class="truncate text-center text-[14px] font-medium text-text-primary" x-text="selectedWeapon.name"></p>
+                    </div>
+
+                    <!-- Stat grid: only shows rows the weapon actually has. -->
+                    <div class="grid grid-cols-2 gap-x-6 gap-y-1.5 text-[11px]">
+                      <!-- Attack (physical + optional extra elemental).
+                           Extra elemental is inlined as "+N element" in
+                           the element's canonical color so users see
+                           e.g. Emerald Sword's "49 + 12 earth" at a
+                           glance instead of losing the elemental part. -->
+                      <template x-if="weaponSummary?.stats.attack.hasBase || weaponSummary?.stats.attack.hasBonus">
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-text-tertiary">Atk</span>
+                          <span class="inline-flex items-center gap-1">
+                            <span
+                              :class="weaponSummary.stats.attack.hasBonus ? 'font-semibold text-success' : 'font-medium text-text-primary'"
+                              :title="weaponSummary.stats.attack.hasBonus ? `${weaponSummary.stats.attack.base} base + ${weaponSummary.stats.attack.bonus} perk` : ''"
+                              x-text="weaponSummary.stats.attack.total"
+                            ></span>
+                            <template x-if="weaponSummary?.native.extraAttack">
+                              <span class="text-text-tertiary">
+                                +<span class="font-medium text-accent-cyan" x-text="`${weaponSummary.native.extraAttack} ${weaponSummary.native.extraAttackType ?? ''}`"></span>
+                              </span>
+                            </template>
+                            <span x-show="compareDiffStat('attack','A') === 1" class="text-[10px] leading-none text-success" aria-hidden="true">&#8593;</span>
+                            <span x-show="compareDiffStat('attack','A') === -1" class="text-[10px] leading-none text-danger" aria-hidden="true">&#8595;</span>
+                          </span>
+                        </div>
+                      </template>
+                      <!-- Defense -->
+                      <template x-if="weaponSummary?.stats.defense.hasBase || weaponSummary?.stats.defense.hasBonus">
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-text-tertiary">Def</span>
+                          <span class="inline-flex items-center gap-1">
+                            <span
+                              :class="weaponSummary.stats.defense.hasBonus ? 'font-semibold text-success' : 'font-medium text-text-primary'"
+                              :title="weaponSummary.stats.defense.hasBonus ? `${weaponSummary.stats.defense.base} base + ${weaponSummary.stats.defense.bonus} perk` : ''"
+                              x-text="weaponSummary.stats.defense.total"
+                            ></span>
+                            <span x-show="compareDiffStat('defense','A') === 1" class="text-[10px] leading-none text-success" aria-hidden="true">&#8593;</span>
+                            <span x-show="compareDiffStat('defense','A') === -1" class="text-[10px] leading-none text-danger" aria-hidden="true">&#8595;</span>
+                          </span>
+                        </div>
+                      </template>
+                      <!-- Range (native only, no perk sums into it) -->
+                      <template x-if="weaponSummary?.native.range != null">
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-text-tertiary">Range</span>
+                          <span class="inline-flex items-center gap-1">
+                            <span class="font-medium text-text-primary" x-text="weaponSummary.native.range"></span>
+                            <span x-show="compareDiffNative('range','A') === 1" class="text-[10px] leading-none text-success" aria-hidden="true">&#8593;</span>
+                            <span x-show="compareDiffNative('range','A') === -1" class="text-[10px] leading-none text-danger" aria-hidden="true">&#8595;</span>
+                          </span>
+                        </div>
+                      </template>
+                      <!-- Magic Level -->
+                      <template x-if="weaponSummary?.stats.magicLevel.hasBase || weaponSummary?.stats.magicLevel.hasBonus">
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-text-tertiary">Magic Level</span>
+                          <span class="inline-flex items-center gap-1">
+                            <span
+                              :class="weaponSummary.stats.magicLevel.hasBonus ? 'font-semibold text-success' : 'font-medium text-text-primary'"
+                              :title="weaponSummary.stats.magicLevel.hasBonus ? `${weaponSummary.stats.magicLevel.base ?? 0} base + ${weaponSummary.stats.magicLevel.bonus} perk` : ''"
+                              x-text="`+${weaponSummary.stats.magicLevel.total}`"
+                            ></span>
+                            <span x-show="compareDiffStat('magicLevel','A') === 1" class="text-[10px] leading-none text-success" aria-hidden="true">&#8593;</span>
+                            <span x-show="compareDiffStat('magicLevel','A') === -1" class="text-[10px] leading-none text-danger" aria-hidden="true">&#8595;</span>
+                          </span>
+                        </div>
+                      </template>
+                      <!-- Distance Fighting -->
+                      <template x-if="weaponSummary?.stats.distanceFighting.hasBase || weaponSummary?.stats.distanceFighting.hasBonus">
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-text-tertiary">Distance Fighting</span>
+                          <span class="inline-flex items-center gap-1">
+                            <span
+                              :class="weaponSummary.stats.distanceFighting.hasBonus ? 'font-semibold text-success' : 'font-medium text-text-primary'"
+                              :title="weaponSummary.stats.distanceFighting.hasBonus ? `${weaponSummary.stats.distanceFighting.base ?? 0} base + ${weaponSummary.stats.distanceFighting.bonus} perk` : ''"
+                              x-text="`+${weaponSummary.stats.distanceFighting.total}`"
+                            ></span>
+                            <span x-show="compareDiffStat('distanceFighting','A') === 1" class="text-[10px] leading-none text-success" aria-hidden="true">&#8593;</span>
+                            <span x-show="compareDiffStat('distanceFighting','A') === -1" class="text-[10px] leading-none text-danger" aria-hidden="true">&#8595;</span>
+                          </span>
+                        </div>
+                      </template>
+                      <!-- Axe -->
+                      <template x-if="weaponSummary?.stats.axeFighting.hasBase || weaponSummary?.stats.axeFighting.hasBonus">
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-text-tertiary">Axe Fighting</span>
+                          <span class="inline-flex items-center gap-1">
+                            <span
+                              :class="weaponSummary.stats.axeFighting.hasBonus ? 'font-semibold text-success' : 'font-medium text-text-primary'"
+                              :title="weaponSummary.stats.axeFighting.hasBonus ? `${weaponSummary.stats.axeFighting.base ?? 0} base + ${weaponSummary.stats.axeFighting.bonus} perk` : ''"
+                              x-text="`+${weaponSummary.stats.axeFighting.total}`"
+                            ></span>
+                            <span x-show="compareDiffStat('axeFighting','A') === 1" class="text-[10px] leading-none text-success" aria-hidden="true">&#8593;</span>
+                            <span x-show="compareDiffStat('axeFighting','A') === -1" class="text-[10px] leading-none text-danger" aria-hidden="true">&#8595;</span>
+                          </span>
+                        </div>
+                      </template>
+                      <!-- Sword -->
+                      <template x-if="weaponSummary?.stats.swordFighting.hasBase || weaponSummary?.stats.swordFighting.hasBonus">
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-text-tertiary">Sword Fighting</span>
+                          <span class="inline-flex items-center gap-1">
+                            <span
+                              :class="weaponSummary.stats.swordFighting.hasBonus ? 'font-semibold text-success' : 'font-medium text-text-primary'"
+                              :title="weaponSummary.stats.swordFighting.hasBonus ? `${weaponSummary.stats.swordFighting.base ?? 0} base + ${weaponSummary.stats.swordFighting.bonus} perk` : ''"
+                              x-text="`+${weaponSummary.stats.swordFighting.total}`"
+                            ></span>
+                            <span x-show="compareDiffStat('swordFighting','A') === 1" class="text-[10px] leading-none text-success" aria-hidden="true">&#8593;</span>
+                            <span x-show="compareDiffStat('swordFighting','A') === -1" class="text-[10px] leading-none text-danger" aria-hidden="true">&#8595;</span>
+                          </span>
+                        </div>
+                      </template>
+                      <!-- Club -->
+                      <template x-if="weaponSummary?.stats.clubFighting.hasBase || weaponSummary?.stats.clubFighting.hasBonus">
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-text-tertiary">Club Fighting</span>
+                          <span class="inline-flex items-center gap-1">
+                            <span
+                              :class="weaponSummary.stats.clubFighting.hasBonus ? 'font-semibold text-success' : 'font-medium text-text-primary'"
+                              :title="weaponSummary.stats.clubFighting.hasBonus ? `${weaponSummary.stats.clubFighting.base ?? 0} base + ${weaponSummary.stats.clubFighting.bonus} perk` : ''"
+                              x-text="`+${weaponSummary.stats.clubFighting.total}`"
+                            ></span>
+                            <span x-show="compareDiffStat('clubFighting','A') === 1" class="text-[10px] leading-none text-success" aria-hidden="true">&#8593;</span>
+                            <span x-show="compareDiffStat('clubFighting','A') === -1" class="text-[10px] leading-none text-danger" aria-hidden="true">&#8595;</span>
+                          </span>
+                        </div>
+                      </template>
+                      <!-- Fist -->
+                      <template x-if="weaponSummary?.stats.fistFighting.hasBase || weaponSummary?.stats.fistFighting.hasBonus">
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-text-tertiary">Fist Fighting</span>
+                          <span class="inline-flex items-center gap-1">
+                            <span
+                              :class="weaponSummary.stats.fistFighting.hasBonus ? 'font-semibold text-success' : 'font-medium text-text-primary'"
+                              :title="weaponSummary.stats.fistFighting.hasBonus ? `${weaponSummary.stats.fistFighting.base ?? 0} base + ${weaponSummary.stats.fistFighting.bonus} perk` : ''"
+                              x-text="`+${weaponSummary.stats.fistFighting.total}`"
+                            ></span>
+                            <span x-show="compareDiffStat('fistFighting','A') === 1" class="text-[10px] leading-none text-success" aria-hidden="true">&#8593;</span>
+                            <span x-show="compareDiffStat('fistFighting','A') === -1" class="text-[10px] leading-none text-danger" aria-hidden="true">&#8595;</span>
+                          </span>
+                        </div>
+                      </template>
+                      <!-- Shielding -->
+                      <template x-if="weaponSummary?.stats.shielding.hasBase || weaponSummary?.stats.shielding.hasBonus">
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-text-tertiary">Shielding</span>
+                          <span class="inline-flex items-center gap-1">
+                            <span
+                              :class="weaponSummary.stats.shielding.hasBonus ? 'font-semibold text-success' : 'font-medium text-text-primary'"
+                              :title="weaponSummary.stats.shielding.hasBonus ? `${weaponSummary.stats.shielding.base ?? 0} base + ${weaponSummary.stats.shielding.bonus} perk` : ''"
+                              x-text="`+${weaponSummary.stats.shielding.total}`"
+                            ></span>
+                            <span x-show="compareDiffStat('shielding','A') === 1" class="text-[10px] leading-none text-success" aria-hidden="true">&#8593;</span>
+                            <span x-show="compareDiffStat('shielding','A') === -1" class="text-[10px] leading-none text-danger" aria-hidden="true">&#8595;</span>
+                          </span>
+                        </div>
+                      </template>
+                      <!-- Damage (wand/rod native, no perk sums). Sits
+                           in a single column like every other stat row —
+                           the range + element read fine at this width. -->
+                      <template x-if="weaponSummary?.native.damageRange">
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-text-tertiary">Dmg</span>
+                          <span class="font-medium text-text-primary">
+                            <span x-text="weaponSummary.native.damageRange"></span>
+                            <span class="text-text-tertiary" x-text="weaponSummary.native.damageType"></span>
+                          </span>
+                        </div>
+                      </template>
+                      <!-- Mana cost -->
+                      <template x-if="weaponSummary?.native.manaCost != null">
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-text-tertiary">Mana</span>
+                          <span class="inline-flex items-center gap-1">
+                            <span class="font-medium text-text-primary" x-text="weaponSummary.native.manaCost"></span>
+                            <span x-show="compareDiffNative('manaCost','A') === 1" class="text-[10px] leading-none text-success" aria-hidden="true">&#8593;</span>
+                            <span x-show="compareDiffNative('manaCost','A') === -1" class="text-[10px] leading-none text-danger" aria-hidden="true">&#8595;</span>
+                          </span>
+                        </div>
+                      </template>
+                      <!-- Imbue slots -->
+                      <template x-if="weaponSummary?.native.imbueSlots != null">
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-text-tertiary">Imbues</span>
+                          <span class="inline-flex items-center gap-1">
+                            <span class="font-medium text-text-primary" x-text="weaponSummary.native.imbueSlots"></span>
+                            <span x-show="compareDiffNative('imbueSlots','A') === 1" class="text-[10px] leading-none text-success" aria-hidden="true">&#8593;</span>
+                            <span x-show="compareDiffNative('imbueSlots','A') === -1" class="text-[10px] leading-none text-danger" aria-hidden="true">&#8595;</span>
+                          </span>
+                        </div>
+                      </template>
+                      <!-- Element magic level bonuses (only when > 0). -->
+                      <template x-for="el in ['holyMagicLevel','iceMagicLevel','earthMagicLevel','energyMagicLevel','fireMagicLevel','deathMagicLevel','healingMagicLevel']" :key="el">
+                        <template x-if="weaponSummary?.stats[el].hasBase || weaponSummary?.stats[el].hasBonus">
+                          <div class="flex items-center justify-between gap-2">
+                            <span class="text-text-tertiary" x-text="({holyMagicLevel:'Holy Magic Level',iceMagicLevel:'Ice Magic Level',earthMagicLevel:'Earth Magic Level',energyMagicLevel:'Energy Magic Level',fireMagicLevel:'Fire Magic Level',deathMagicLevel:'Death Magic Level',healingMagicLevel:'Healing Magic Level'})[el]"></span>
+                            <span class="inline-flex items-center gap-1">
+                              <span
+                                :class="weaponSummary.stats[el].hasBonus ? 'font-semibold text-success' : 'font-medium text-text-primary'"
+                                :title="weaponSummary.stats[el].hasBonus ? `${weaponSummary.stats[el].base ?? 0} base + ${weaponSummary.stats[el].bonus} perk` : ''"
+                                x-text="`+${weaponSummary.stats[el].total}`"
+                              ></span>
+                              <span x-show="compareDiffStat(el,'A') === 1" class="text-[10px] leading-none text-success" aria-hidden="true">&#8593;</span>
+                              <span x-show="compareDiffStat(el,'A') === -1" class="text-[10px] leading-none text-danger" aria-hidden="true">&#8595;</span>
+                            </span>
+                          </div>
+                        </template>
+                      </template>
+                    </div>
+
+                    <!--
+                      Bestiary bonuses. Same family sums across picks
+                      (e.g. two +3% Bird perks show as one "+6%" row);
+                      the "×N" chip + tooltip breakdown appears when
+                      more than one perk contributed to that family.
+                    -->
+                    <template x-if="weaponSummary?.bestiary.length">
+                      <div class="mt-3 border-t border-border-subtle pt-3">
+                        <p class="mb-1 text-[9px] uppercase tracking-wider text-text-tertiary">Bestiary</p>
+                        <ul class="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-text-secondary">
+                          <template x-for="b in weaponSummary.bestiary" :key="b.family">
+                            <li :title="b.count > 1 ? b.tooltipParts.join(', ') : ''">
+                              Bonus Dmg — <span class="text-text-primary" x-text="b.family"></span>
+                              <span
+                                :class="b.count > 1 ? 'font-semibold text-success' : 'text-text-primary'"
+                                x-text="`+${b.totalPct}%`"
+                              ></span>
+                              <template x-if="b.count > 1">
+                                <span class="ml-0.5 text-[9px] text-text-tertiary" x-text="`×${b.count}`"></span>
+                              </template>
+                            </li>
+                          </template>
+                        </ul>
+                      </div>
+                    </template>
+
+                    <!--
+                      Generic bonus effects — crit%, scaling, on-kill,
+                      on-hit, cooldown, mana leech, boss/sinister, etc.
+                      Effects with the same shape collapse into a single
+                      summed row; hover the row to see the individual
+                      picks that contributed.
+                    -->
+                    <template x-if="weaponSummary?.bonusEffects.length">
+                      <div class="mt-3 border-t border-border-subtle pt-3">
+                        <p class="mb-1 text-[9px] uppercase tracking-wider text-text-tertiary">Bonus Effects</p>
+                        <ul class="space-y-0.5 text-[10px] text-text-secondary">
+                          <template x-for="line in weaponSummary.bonusEffects" :key="line.display">
+                            <li :title="line.count > 1 ? line.tooltipParts.join(', ') : ''">
+                              <template x-if="line.valueDisplay">
+                                <span
+                                  :class="line.count > 1 ? 'font-semibold text-success' : 'text-text-primary'"
+                                  x-text="line.valueDisplay"
+                                ></span>
+                              </template>
+                              <span x-text="line.valueDisplay ? ' ' + line.label : line.label"></span>
+                              <template x-if="line.count > 1">
+                                <span class="ml-1 text-[9px] text-text-tertiary" x-text="`×${line.count}`"></span>
+                              </template>
+                            </li>
+                          </template>
+                        </ul>
+                      </div>
+                    </template>
+
+                    <!-- Spell augments grouped by spell (same collapse
+                         rule per spell). -->
+                    <template x-if="weaponSummary?.spellAugments.length">
+                      <div class="mt-3 border-t border-border-subtle pt-3">
+                        <p class="mb-1 text-[9px] uppercase tracking-wider text-text-tertiary">Spell Augments</p>
+                        <div class="space-y-1.5">
+                          <template x-for="aug in weaponSummary.spellAugments" :key="aug.spell">
+                            <div class="text-[10px]">
+                              <p class="text-text-primary" x-text="aug.spell"></p>
+                              <ul class="ml-3 space-y-0.5 text-text-secondary">
+                                <template x-for="eff in aug.effects" :key="eff.display">
+                                  <li :title="eff.count > 1 ? eff.tooltipParts.join(', ') : ''">
+                                    <template x-if="eff.valueDisplay">
+                                      <span
+                                        :class="eff.count > 1 ? 'font-semibold text-success' : 'text-text-primary'"
+                                        x-text="eff.valueDisplay"
+                                      ></span>
+                                    </template>
+                                    <span x-text="eff.valueDisplay ? ' ' + eff.label : eff.label"></span>
+                                    <template x-if="eff.count > 1">
+                                      <span class="ml-1 text-[9px] text-text-tertiary" x-text="`×${eff.count}`"></span>
+                                    </template>
+                                  </li>
+                                </template>
+                              </ul>
+                            </div>
+                          </template>
+                        </div>
+                      </div>
+                    </template>
+                  </article>
+                  <template x-if="compareMode && selectedWeaponB">
+                  <!--
+                    Weapon Summary — the differentiator vs TibiaPal. Rolls up
+                    the base stats + effective bonuses from picked perks.
+                    Stats that a perk boosts render in green with a native
+                    tooltip showing "base + perk = total". Everything
+                    situational (bestiary, boss/sinister, perfect shot, crit,
+                    scaling, on-kill, augments) lives as tight text lines in
+                    its own section so the numeric block stays scannable.
+                  -->
+                  <article class="rounded-md border border-border-subtle bg-bg-surface p-4">
+                    <!--
+                      Header: weapon sprite + name. Anchors the summary to
+                      the weapon it belongs to (matters most in compare
+                      mode when two summaries sit side by side and need to
+                      read clearly on their own).
+                    -->
+                    <div class="mb-3 flex flex-col items-center gap-2 border-b border-border-subtle pb-3">
+                      <p class="text-[9px] uppercase tracking-wider text-text-tertiary">Weapon Summary · B</p>
+                      <div class="grid h-16 w-16 shrink-0 place-items-center rounded border border-accent-violet/40 bg-bg-sunken">
+                        <img
+                          :src="`/sprites/weapons/${selectedWeaponB.sprite}`"
+                          :alt="selectedWeaponB.name"
+                          class="h-full w-full object-contain p-1"
+                          style="image-rendering: pixelated;"
+                          loading="lazy"
+                          decoding="async"
+                          onerror="this.style.display='none'"
+                        />
+                      </div>
+                      <p class="truncate text-center text-[14px] font-medium text-text-primary" x-text="selectedWeaponB.name"></p>
+                    </div>
+
+                    <!-- Stat grid: only shows rows the weapon actually has. -->
+                    <div class="grid grid-cols-2 gap-x-6 gap-y-1.5 text-[11px]">
+                      <!-- Attack (physical + optional extra elemental) -->
+                      <template x-if="weaponSummaryB?.stats.attack.hasBase || weaponSummaryB?.stats.attack.hasBonus">
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-text-tertiary">Atk</span>
+                          <span class="inline-flex items-center gap-1">
+                            <span
+                              :class="weaponSummaryB.stats.attack.hasBonus ? 'font-semibold text-success' : 'font-medium text-text-primary'"
+                              :title="weaponSummaryB.stats.attack.hasBonus ? `${weaponSummaryB.stats.attack.base} base + ${weaponSummaryB.stats.attack.bonus} perk` : ''"
+                              x-text="weaponSummaryB.stats.attack.total"
+                            ></span>
+                            <template x-if="weaponSummaryB?.native.extraAttack">
+                              <span class="text-text-tertiary">
+                                +<span class="font-medium text-accent-cyan" x-text="`${weaponSummaryB.native.extraAttack} ${weaponSummaryB.native.extraAttackType ?? ''}`"></span>
+                              </span>
+                            </template>
+                            <span x-show="compareDiffStat('attack','B') === 1" class="text-[10px] leading-none text-success" aria-hidden="true">&#8593;</span>
+                            <span x-show="compareDiffStat('attack','B') === -1" class="text-[10px] leading-none text-danger" aria-hidden="true">&#8595;</span>
+                          </span>
+                        </div>
+                      </template>
+                      <!-- Defense -->
+                      <template x-if="weaponSummaryB?.stats.defense.hasBase || weaponSummaryB?.stats.defense.hasBonus">
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-text-tertiary">Def</span>
+                          <span class="inline-flex items-center gap-1">
+                            <span
+                              :class="weaponSummaryB.stats.defense.hasBonus ? 'font-semibold text-success' : 'font-medium text-text-primary'"
+                              :title="weaponSummaryB.stats.defense.hasBonus ? `${weaponSummaryB.stats.defense.base} base + ${weaponSummaryB.stats.defense.bonus} perk` : ''"
+                              x-text="weaponSummaryB.stats.defense.total"
+                            ></span>
+                            <span x-show="compareDiffStat('defense','B') === 1" class="text-[10px] leading-none text-success" aria-hidden="true">&#8593;</span>
+                            <span x-show="compareDiffStat('defense','B') === -1" class="text-[10px] leading-none text-danger" aria-hidden="true">&#8595;</span>
+                          </span>
+                        </div>
+                      </template>
+                      <!-- Range (native only, no perk sums into it) -->
+                      <template x-if="weaponSummaryB?.native.range != null">
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-text-tertiary">Range</span>
+                          <span class="inline-flex items-center gap-1">
+                            <span class="font-medium text-text-primary" x-text="weaponSummaryB.native.range"></span>
+                            <span x-show="compareDiffNative('range','B') === 1" class="text-[10px] leading-none text-success" aria-hidden="true">&#8593;</span>
+                            <span x-show="compareDiffNative('range','B') === -1" class="text-[10px] leading-none text-danger" aria-hidden="true">&#8595;</span>
+                          </span>
+                        </div>
+                      </template>
+                      <!-- Magic Level -->
+                      <template x-if="weaponSummaryB?.stats.magicLevel.hasBase || weaponSummaryB?.stats.magicLevel.hasBonus">
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-text-tertiary">Magic Level</span>
+                          <span class="inline-flex items-center gap-1">
+                            <span
+                              :class="weaponSummaryB.stats.magicLevel.hasBonus ? 'font-semibold text-success' : 'font-medium text-text-primary'"
+                              :title="weaponSummaryB.stats.magicLevel.hasBonus ? `${weaponSummaryB.stats.magicLevel.base ?? 0} base + ${weaponSummaryB.stats.magicLevel.bonus} perk` : ''"
+                              x-text="`+${weaponSummaryB.stats.magicLevel.total}`"
+                            ></span>
+                            <span x-show="compareDiffStat('magicLevel','B') === 1" class="text-[10px] leading-none text-success" aria-hidden="true">&#8593;</span>
+                            <span x-show="compareDiffStat('magicLevel','B') === -1" class="text-[10px] leading-none text-danger" aria-hidden="true">&#8595;</span>
+                          </span>
+                        </div>
+                      </template>
+                      <!-- Distance Fighting -->
+                      <template x-if="weaponSummaryB?.stats.distanceFighting.hasBase || weaponSummaryB?.stats.distanceFighting.hasBonus">
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-text-tertiary">Distance Fighting</span>
+                          <span class="inline-flex items-center gap-1">
+                            <span
+                              :class="weaponSummaryB.stats.distanceFighting.hasBonus ? 'font-semibold text-success' : 'font-medium text-text-primary'"
+                              :title="weaponSummaryB.stats.distanceFighting.hasBonus ? `${weaponSummaryB.stats.distanceFighting.base ?? 0} base + ${weaponSummaryB.stats.distanceFighting.bonus} perk` : ''"
+                              x-text="`+${weaponSummaryB.stats.distanceFighting.total}`"
+                            ></span>
+                            <span x-show="compareDiffStat('distanceFighting','B') === 1" class="text-[10px] leading-none text-success" aria-hidden="true">&#8593;</span>
+                            <span x-show="compareDiffStat('distanceFighting','B') === -1" class="text-[10px] leading-none text-danger" aria-hidden="true">&#8595;</span>
+                          </span>
+                        </div>
+                      </template>
+                      <!-- Axe -->
+                      <template x-if="weaponSummaryB?.stats.axeFighting.hasBase || weaponSummaryB?.stats.axeFighting.hasBonus">
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-text-tertiary">Axe Fighting</span>
+                          <span class="inline-flex items-center gap-1">
+                            <span
+                              :class="weaponSummaryB.stats.axeFighting.hasBonus ? 'font-semibold text-success' : 'font-medium text-text-primary'"
+                              :title="weaponSummaryB.stats.axeFighting.hasBonus ? `${weaponSummaryB.stats.axeFighting.base ?? 0} base + ${weaponSummaryB.stats.axeFighting.bonus} perk` : ''"
+                              x-text="`+${weaponSummaryB.stats.axeFighting.total}`"
+                            ></span>
+                            <span x-show="compareDiffStat('axeFighting','B') === 1" class="text-[10px] leading-none text-success" aria-hidden="true">&#8593;</span>
+                            <span x-show="compareDiffStat('axeFighting','B') === -1" class="text-[10px] leading-none text-danger" aria-hidden="true">&#8595;</span>
+                          </span>
+                        </div>
+                      </template>
+                      <!-- Sword -->
+                      <template x-if="weaponSummaryB?.stats.swordFighting.hasBase || weaponSummaryB?.stats.swordFighting.hasBonus">
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-text-tertiary">Sword Fighting</span>
+                          <span class="inline-flex items-center gap-1">
+                            <span
+                              :class="weaponSummaryB.stats.swordFighting.hasBonus ? 'font-semibold text-success' : 'font-medium text-text-primary'"
+                              :title="weaponSummaryB.stats.swordFighting.hasBonus ? `${weaponSummaryB.stats.swordFighting.base ?? 0} base + ${weaponSummaryB.stats.swordFighting.bonus} perk` : ''"
+                              x-text="`+${weaponSummaryB.stats.swordFighting.total}`"
+                            ></span>
+                            <span x-show="compareDiffStat('swordFighting','B') === 1" class="text-[10px] leading-none text-success" aria-hidden="true">&#8593;</span>
+                            <span x-show="compareDiffStat('swordFighting','B') === -1" class="text-[10px] leading-none text-danger" aria-hidden="true">&#8595;</span>
+                          </span>
+                        </div>
+                      </template>
+                      <!-- Club -->
+                      <template x-if="weaponSummaryB?.stats.clubFighting.hasBase || weaponSummaryB?.stats.clubFighting.hasBonus">
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-text-tertiary">Club Fighting</span>
+                          <span class="inline-flex items-center gap-1">
+                            <span
+                              :class="weaponSummaryB.stats.clubFighting.hasBonus ? 'font-semibold text-success' : 'font-medium text-text-primary'"
+                              :title="weaponSummaryB.stats.clubFighting.hasBonus ? `${weaponSummaryB.stats.clubFighting.base ?? 0} base + ${weaponSummaryB.stats.clubFighting.bonus} perk` : ''"
+                              x-text="`+${weaponSummaryB.stats.clubFighting.total}`"
+                            ></span>
+                            <span x-show="compareDiffStat('clubFighting','B') === 1" class="text-[10px] leading-none text-success" aria-hidden="true">&#8593;</span>
+                            <span x-show="compareDiffStat('clubFighting','B') === -1" class="text-[10px] leading-none text-danger" aria-hidden="true">&#8595;</span>
+                          </span>
+                        </div>
+                      </template>
+                      <!-- Fist -->
+                      <template x-if="weaponSummaryB?.stats.fistFighting.hasBase || weaponSummaryB?.stats.fistFighting.hasBonus">
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-text-tertiary">Fist Fighting</span>
+                          <span class="inline-flex items-center gap-1">
+                            <span
+                              :class="weaponSummaryB.stats.fistFighting.hasBonus ? 'font-semibold text-success' : 'font-medium text-text-primary'"
+                              :title="weaponSummaryB.stats.fistFighting.hasBonus ? `${weaponSummaryB.stats.fistFighting.base ?? 0} base + ${weaponSummaryB.stats.fistFighting.bonus} perk` : ''"
+                              x-text="`+${weaponSummaryB.stats.fistFighting.total}`"
+                            ></span>
+                            <span x-show="compareDiffStat('fistFighting','B') === 1" class="text-[10px] leading-none text-success" aria-hidden="true">&#8593;</span>
+                            <span x-show="compareDiffStat('fistFighting','B') === -1" class="text-[10px] leading-none text-danger" aria-hidden="true">&#8595;</span>
+                          </span>
+                        </div>
+                      </template>
+                      <!-- Shielding -->
+                      <template x-if="weaponSummaryB?.stats.shielding.hasBase || weaponSummaryB?.stats.shielding.hasBonus">
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-text-tertiary">Shielding</span>
+                          <span class="inline-flex items-center gap-1">
+                            <span
+                              :class="weaponSummaryB.stats.shielding.hasBonus ? 'font-semibold text-success' : 'font-medium text-text-primary'"
+                              :title="weaponSummaryB.stats.shielding.hasBonus ? `${weaponSummaryB.stats.shielding.base ?? 0} base + ${weaponSummaryB.stats.shielding.bonus} perk` : ''"
+                              x-text="`+${weaponSummaryB.stats.shielding.total}`"
+                            ></span>
+                            <span x-show="compareDiffStat('shielding','B') === 1" class="text-[10px] leading-none text-success" aria-hidden="true">&#8593;</span>
+                            <span x-show="compareDiffStat('shielding','B') === -1" class="text-[10px] leading-none text-danger" aria-hidden="true">&#8595;</span>
+                          </span>
+                        </div>
+                      </template>
+                      <!-- Damage (wand/rod native, no perk sums). Sits
+                           in a single column like every other stat row —
+                           the range + element read fine at this width. -->
+                      <template x-if="weaponSummaryB?.native.damageRange">
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-text-tertiary">Dmg</span>
+                          <span class="font-medium text-text-primary">
+                            <span x-text="weaponSummaryB.native.damageRange"></span>
+                            <span class="text-text-tertiary" x-text="weaponSummaryB.native.damageType"></span>
+                          </span>
+                        </div>
+                      </template>
+                      <!-- Mana cost -->
+                      <template x-if="weaponSummaryB?.native.manaCost != null">
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-text-tertiary">Mana</span>
+                          <span class="inline-flex items-center gap-1">
+                            <span class="font-medium text-text-primary" x-text="weaponSummaryB.native.manaCost"></span>
+                            <span x-show="compareDiffNative('manaCost','B') === 1" class="text-[10px] leading-none text-success" aria-hidden="true">&#8593;</span>
+                            <span x-show="compareDiffNative('manaCost','B') === -1" class="text-[10px] leading-none text-danger" aria-hidden="true">&#8595;</span>
+                          </span>
+                        </div>
+                      </template>
+                      <!-- Imbue slots -->
+                      <template x-if="weaponSummaryB?.native.imbueSlots != null">
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-text-tertiary">Imbues</span>
+                          <span class="inline-flex items-center gap-1">
+                            <span class="font-medium text-text-primary" x-text="weaponSummaryB.native.imbueSlots"></span>
+                            <span x-show="compareDiffNative('imbueSlots','B') === 1" class="text-[10px] leading-none text-success" aria-hidden="true">&#8593;</span>
+                            <span x-show="compareDiffNative('imbueSlots','B') === -1" class="text-[10px] leading-none text-danger" aria-hidden="true">&#8595;</span>
+                          </span>
+                        </div>
+                      </template>
+                      <!-- Element magic level bonuses (only when > 0). -->
+                      <template x-for="el in ['holyMagicLevel','iceMagicLevel','earthMagicLevel','energyMagicLevel','fireMagicLevel','deathMagicLevel','healingMagicLevel']" :key="el">
+                        <template x-if="weaponSummaryB?.stats[el].hasBase || weaponSummaryB?.stats[el].hasBonus">
+                          <div class="flex items-center justify-between gap-2">
+                            <span class="text-text-tertiary" x-text="({holyMagicLevel:'Holy Magic Level',iceMagicLevel:'Ice Magic Level',earthMagicLevel:'Earth Magic Level',energyMagicLevel:'Energy Magic Level',fireMagicLevel:'Fire Magic Level',deathMagicLevel:'Death Magic Level',healingMagicLevel:'Healing Magic Level'})[el]"></span>
+                            <span class="inline-flex items-center gap-1">
+                              <span
+                                :class="weaponSummaryB.stats[el].hasBonus ? 'font-semibold text-success' : 'font-medium text-text-primary'"
+                                :title="weaponSummaryB.stats[el].hasBonus ? `${weaponSummaryB.stats[el].base ?? 0} base + ${weaponSummaryB.stats[el].bonus} perk` : ''"
+                                x-text="`+${weaponSummaryB.stats[el].total}`"
+                              ></span>
+                              <span x-show="compareDiffStat(el,'B') === 1" class="text-[10px] leading-none text-success" aria-hidden="true">&#8593;</span>
+                              <span x-show="compareDiffStat(el,'B') === -1" class="text-[10px] leading-none text-danger" aria-hidden="true">&#8595;</span>
+                            </span>
+                          </div>
+                        </template>
+                      </template>
+                    </div>
+
+                    <!--
+                      Bestiary bonuses. Same family sums across picks
+                      (e.g. two +3% Bird perks show as one "+6%" row);
+                      the "×N" chip + tooltip breakdown appears when
+                      more than one perk contributed to that family.
+                    -->
+                    <template x-if="weaponSummaryB?.bestiary.length">
+                      <div class="mt-3 border-t border-border-subtle pt-3">
+                        <p class="mb-1 text-[9px] uppercase tracking-wider text-text-tertiary">Bestiary</p>
+                        <ul class="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-text-secondary">
+                          <template x-for="b in weaponSummaryB.bestiary" :key="b.family">
+                            <li :title="b.count > 1 ? b.tooltipParts.join(', ') : ''">
+                              Bonus Dmg — <span class="text-text-primary" x-text="b.family"></span>
+                              <span
+                                :class="b.count > 1 ? 'font-semibold text-success' : 'text-text-primary'"
+                                x-text="`+${b.totalPct}%`"
+                              ></span>
+                              <template x-if="b.count > 1">
+                                <span class="ml-0.5 text-[9px] text-text-tertiary" x-text="`×${b.count}`"></span>
+                              </template>
+                            </li>
+                          </template>
+                        </ul>
+                      </div>
+                    </template>
+
+                    <!--
+                      Generic bonus effects — crit%, scaling, on-kill,
+                      on-hit, cooldown, mana leech, boss/sinister, etc.
+                      Effects with the same shape collapse into a single
+                      summed row; hover the row to see the individual
+                      picks that contributed.
+                    -->
+                    <template x-if="weaponSummaryB?.bonusEffects.length">
+                      <div class="mt-3 border-t border-border-subtle pt-3">
+                        <p class="mb-1 text-[9px] uppercase tracking-wider text-text-tertiary">Bonus Effects</p>
+                        <ul class="space-y-0.5 text-[10px] text-text-secondary">
+                          <template x-for="line in weaponSummaryB.bonusEffects" :key="line.display">
+                            <li :title="line.count > 1 ? line.tooltipParts.join(', ') : ''">
+                              <template x-if="line.valueDisplay">
+                                <span
+                                  :class="line.count > 1 ? 'font-semibold text-success' : 'text-text-primary'"
+                                  x-text="line.valueDisplay"
+                                ></span>
+                              </template>
+                              <span x-text="line.valueDisplay ? ' ' + line.label : line.label"></span>
+                              <template x-if="line.count > 1">
+                                <span class="ml-1 text-[9px] text-text-tertiary" x-text="`×${line.count}`"></span>
+                              </template>
+                            </li>
+                          </template>
+                        </ul>
+                      </div>
+                    </template>
+
+                    <!-- Spell augments grouped by spell (same collapse
+                         rule per spell). -->
+                    <template x-if="weaponSummaryB?.spellAugments.length">
+                      <div class="mt-3 border-t border-border-subtle pt-3">
+                        <p class="mb-1 text-[9px] uppercase tracking-wider text-text-tertiary">Spell Augments</p>
+                        <div class="space-y-1.5">
+                          <template x-for="aug in weaponSummaryB.spellAugments" :key="aug.spell">
+                            <div class="text-[10px]">
+                              <p class="text-text-primary" x-text="aug.spell"></p>
+                              <ul class="ml-3 space-y-0.5 text-text-secondary">
+                                <template x-for="eff in aug.effects" :key="eff.display">
+                                  <li :title="eff.count > 1 ? eff.tooltipParts.join(', ') : ''">
+                                    <template x-if="eff.valueDisplay">
+                                      <span
+                                        :class="eff.count > 1 ? 'font-semibold text-success' : 'text-text-primary'"
+                                        x-text="eff.valueDisplay"
+                                      ></span>
+                                    </template>
+                                    <span x-text="eff.valueDisplay ? ' ' + eff.label : eff.label"></span>
+                                    <template x-if="eff.count > 1">
+                                      <span class="ml-1 text-[9px] text-text-tertiary" x-text="`×${eff.count}`"></span>
+                                    </template>
+                                  </li>
+                                </template>
+                              </ul>
+                            </div>
+                          </template>
+                        </div>
+                      </div>
+                    </template>
+                  </article>
+                  </template>
+        </div>
+      </template>
+
+      <!--
+        ============ SHAPE PICKER MODAL ============
+        Overlay + centered card. Fires when the Shape button is clicked
+        for either slot; the store holds `shapeModalSlot` + `shapeModalLevel`
+        so the modal knows which weapon+level to write to on Apply.
+        Backdrop click and Escape close without applying.
+      -->
+      <template x-if="shapeModalSlot !== null">
+        <div
+          class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          @click.self="closeShapeModal()"
+          @keydown.escape.window="closeShapeModal()"
+        >
+          <div class="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-md border border-border-emphasis bg-bg-surface shadow-2xl shadow-black/60">
+            <!-- Header -->
+            <div class="flex items-center justify-between border-b border-border-subtle px-4 py-3">
+              <div>
+                <p class="text-[9px] uppercase tracking-wider text-text-tertiary">
+                  Shape Perk — Slot <span x-text="shapeModalSlot"></span> · Level <span x-text="shapeModalLevel"></span>
+                </p>
+                <p class="mt-0.5 text-[13px] font-medium text-text-primary">
+                  Choose a replacement perk
+                </p>
+              </div>
+              <button
+                type="button"
+                @click="closeShapeModal()"
+                title="Cancel"
+                aria-label="Cancel"
+                class="grid h-7 w-7 place-items-center rounded border border-border-subtle bg-bg-sunken text-text-secondary transition-colors hover:border-danger-red hover:text-danger-red"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-3.5 w-3.5" aria-hidden="true">
+                  <path d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L8.94 10l-4.72 4.72a.75.75 0 1 0 1.06 1.06L10 11.06l4.72 4.72a.75.75 0 1 0 1.06-1.06L11.06 10l4.72-4.72a.75.75 0 0 0-1.06-1.06L10 8.94 5.28 4.22Z" />
+                </svg>
+              </button>
+            </div>
+
+            <!-- Search -->
+            <div class="border-b border-border-subtle px-4 py-2">
+              <input
+                type="text"
+                :value="shapeModalSearch"
+                @input="shapeModalSearch = $event.target.value"
+                placeholder="Search perks..."
+                class="w-full rounded border border-border-subtle bg-bg-sunken px-3 py-1.5 text-[12px] text-text-primary placeholder:text-text-tertiary focus:border-accent-violet focus:outline-none"
+              />
+            </div>
+
+            <!--
+              Options grid — scrollable so the modal height stays bounded
+              even with the full ~64-perk list. Selected option gets the
+              violet ring; click applies via bottom Swap button.
+            -->
+            <div class="flex-1 overflow-y-auto p-3">
+              <ul class="flex flex-col gap-2">
+                <template x-for="opt in shapeModalOptions" :key="opt.id">
+                  <li>
+                    <button
+                      type="button"
+                      @click="shapeModalSelectedId = opt.id"
+                      class="flex w-full items-center gap-4 rounded border p-3 text-left transition-colors"
+                      :class="shapeModalSelectedId === opt.id
+                        ? 'border-accent-violet bg-accent-violet/10'
+                        : 'border-border-subtle bg-bg-sunken hover:border-accent-violet/60'"
+                    >
+                      <div class="grid h-14 w-14 shrink-0 place-items-center rounded border border-border-subtle bg-bg-sunken">
+                        <img
+                          :src="`/sprites/perks/${opt.icon}`"
+                          :alt="opt.name"
+                          class="h-full w-full object-contain p-1"
+                          style="image-rendering: pixelated;"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </div>
+                      <div class="min-w-0 flex-1">
+                        <p class="truncate text-[13px] font-medium text-text-primary" x-text="opt.name"></p>
+                        <p class="mt-1 text-[11px] leading-snug text-text-secondary" x-text="opt.rank10"></p>
+                      </div>
+                    </button>
+                  </li>
+                </template>
+                <template x-if="shapeModalOptions.length === 0">
+                  <li class="col-span-full px-2 py-6 text-center text-[11px] text-text-tertiary">
+                    No matches. Try a different search.
+                  </li>
+                </template>
+              </ul>
+            </div>
+
+            <!-- Footer actions -->
+            <div class="flex items-center justify-between border-t border-border-subtle px-4 py-3">
+              <p class="text-[10px] text-text-tertiary">
+                <span x-text="shapeModalOptions.length"></span> compatible perks
+              </p>
+              <div class="flex gap-2">
+                <button
+                  type="button"
+                  @click="closeShapeModal()"
+                  class="rounded border border-border-subtle bg-bg-sunken px-4 py-1.5 text-[11px] font-medium uppercase tracking-wider text-text-secondary transition-colors hover:border-border-emphasis hover:text-text-primary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  :disabled="!shapeModalSelectedId"
+                  @click="applyShapeSelection()"
+                  class="rounded border border-accent-violet bg-accent-violet/20 px-4 py-1.5 text-[11px] font-medium uppercase tracking-wider text-accent-violet transition-colors hover:bg-accent-violet/30 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-accent-violet/20"
+                >
+                  Swap
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+
+    </div>
+
+  </main>
+
+  <Footer />
+</Layout>

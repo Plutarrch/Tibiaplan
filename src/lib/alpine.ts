@@ -12,6 +12,7 @@ import { rashidLocation } from "./rashidLocation";
 import { tabsControl } from "./tabsControl";
 import { trainingTab } from "./trainingTab";
 import { trainingSlots } from "./trainingSlots";
+import { weaponProficiencyTab } from "./weaponProficiencyTab";
 
 declare global {
   interface Window {
@@ -23,6 +24,7 @@ Alpine.data("characterSheet", characterSheet);
 Alpine.data("deathSimulator", deathSimulator);
 Alpine.data("trainingTab", trainingTab);
 Alpine.data("trainingSlots", trainingSlots);
+Alpine.data("weaponProficiencyTab", weaponProficiencyTab);
 Alpine.data("offlineTrainingTab", offlineTrainingTab);
 Alpine.data("lootTab", lootTab);
 Alpine.data("imbuementsTab", imbuementsTab);
